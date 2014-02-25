@@ -137,7 +137,7 @@ Aria.classDefinition({
         checkHighlightedElementsIndices : function (expectedHighlightedArray) {
             var widgetInstance = this._getWidgetInstance();
             var actualHighlightedArray = widgetInstance.getHighlight();
-            this.assertJsonEquals(expectedHighlightedArray, actualHighlightedArray, "Expected higlighted elements indices are ["
+            this.assertJsonEquals(expectedHighlightedArray, actualHighlightedArray, "Expected highlighted elements indices are ["
                     + expectedHighlightedArray
                     + "] but actual highlighted elements indices are ["
                     + actualHighlightedArray + "]");
