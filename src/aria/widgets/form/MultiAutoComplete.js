@@ -352,6 +352,9 @@ Aria.classDefinition({
          * @protected
          */
         _dom_onkeydown : function (event) {
+            var inputField = this.getTextInputField();
+            var inputFieldValue = inputField.value;
+
             switch (event.keyCode) {
 
                 case event.KC_ARROW_LEFT:
@@ -395,9 +398,6 @@ Aria.classDefinition({
                         this.removeHighlight();
                         this._enterInputField();
                     } else {
-                        var inputField = this.getTextInputField();
-                        var inputFieldValue = inputField.value;
-
                         if (aria.utils.String.trim(inputFieldValue) !== "") {
                             if (this.controller.freeText) {
                                 event.preventDefault();
