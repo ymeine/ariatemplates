@@ -326,7 +326,7 @@ Aria.classDefinition({
                     this._makeInputFieldLastChild();
                 }
             } else if (blurredElement.className.indexOf("highlight") != -1) {
-                this.removeHighlight();
+                this._unsetHighlight(blurredElement);
             }
 
             this.$TextInput._dom_onblur.call(this, event);
@@ -538,8 +538,7 @@ Aria.classDefinition({
             for (var k = 0; k < indices.length; k++) {
                 var suggestionNode = suggestionContainer.children[indices[k] - 1];
                 if (suggestionNode) {
-                    this._removeClass(suggestionNode, 'highlight');
-                    suggestionNode.removeAttribute('tabindex');
+                    this._unsetHighlight(suggestionNode);
                 }
             }
         },
@@ -553,6 +552,11 @@ Aria.classDefinition({
             var suggestionNodeClassList = new aria.utils.ClassList(suggestionNode);
             suggestionNodeClassList.remove(className);
             suggestionNodeClassList.$dispose();
+        },
+
+        _unsetHighlight : function(suggestionNode) {
+            this._removeClass(suggestionNode, 'highlight');
+            suggestionNode.removeAttribute('tabindex');
         },
 
         /**
@@ -582,14 +586,15 @@ Aria.classDefinition({
                 if (suggestionNode) {
                     latestSuggestionNode = suggestionNode;
                     this._addClass(suggestionNode, 'highlight');
-                    suggestionNode.setAttribute('tabindex', 0);
                 }
             }
 
             if (latestSuggestionNode != null) {
+                latestSuggestionNode.setAttribute('tabindex', 0);
                 latestSuggestionNode.focus();
             }
         },
+
         /**
          * To add class for DomElement
          * @param {HTMLElement} suggestionNode

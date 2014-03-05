@@ -562,9 +562,9 @@ Aria.classDefinition({
                     method: '__pressTab'
                 },
                 {
-                    name: 'Check focus went back to the input field and the caret is at its beginning',
-                    method: '__checkCaretAndFocus',
-                    args: [0],
+                    name: 'Check focus went back to the input field',
+                    method: '__shouldInputFieldBeFocused',
+                    args: [true],
                     asynchronous: false
                 }
             ];
