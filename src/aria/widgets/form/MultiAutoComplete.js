@@ -535,7 +535,7 @@ Aria.classDefinition({
         removeHighlight : function (indices) {
             if (indices == null) {
                 indices = this.getHighlight();
-            } else if (aria.utils.Type.isArray(indices)) {
+            } else if (!aria.utils.Type.isArray(indices)) {
                 indices = [indices];
             }
 

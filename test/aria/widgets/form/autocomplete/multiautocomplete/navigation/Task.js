@@ -22,6 +22,7 @@ Aria.classDefinition({
 
     $dependencies: [
         "aria.utils.Type",
+
         "aria.core.Browser",
 
         "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Helpers"

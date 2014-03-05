@@ -19,10 +19,12 @@ Aria.classDefinition({
     $extends : "test.aria.widgets.form.autocomplete.multiautocomplete.BaseMultiAutoCompleteTestCase",
 
     $dependencies: [
-        "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer",
         "aria.utils.Type",
-        "aria.utils.Caret",
         "aria.utils.Array",
+
+        "aria.utils.Caret",
+
+        "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer",
 
         "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Helpers"
     ],

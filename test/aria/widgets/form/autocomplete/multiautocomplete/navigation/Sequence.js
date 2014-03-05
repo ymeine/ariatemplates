@@ -25,9 +25,10 @@ Aria.classDefinition({
     $classpath : "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequence",
 
     $dependencies: [
-        "aria.core.Sequencer",
         "aria.utils.Type",
         "aria.utils.Array",
+
+        "aria.core.Sequencer",
 
         "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Task",
 
