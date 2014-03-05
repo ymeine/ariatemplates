@@ -312,13 +312,6 @@ Aria.classDefinition({
             }
         },
 
-        _dom_onfocus : function(event) {
-            if (event.target === this.getTextInputField()) {
-                this.removeHighlight();
-            }
-            this.$AutoComplete._dom_onfocus.call(this, event);
-        },
-
         /**
          * Handling blur event
          * @param {aria.utils.Event} event
@@ -326,9 +319,14 @@ Aria.classDefinition({
          */
         _dom_onblur : function (event) {
             var inputField = this.getTextInputField();
+            var blurredElement = event.target;
 
-            if (inputField.nextSibling != null && inputField.value === "") {
-                this._makeInputFieldLastChild();
+            if (blurredElement === inputField) {
+                if (inputField.nextSibling != null && inputField.value === "") {
+                    this._makeInputFieldLastChild();
+                }
+            } else if (blurredElement.className.indexOf("highlight") != -1) {
+                this.removeHighlight();
             }
 
             this.$TextInput._dom_onblur.call(this, event);
@@ -359,23 +357,25 @@ Aria.classDefinition({
 
                 case event.KC_ARROW_LEFT:
                     if (this.hasInsertedOptions()) {
+
+                        if (this.isInputFieldFocused()) {
+                            var position = aria.utils.Caret.getPosition(inputField);
+                            if (position.start === 0 && position.end === 0) {
+                                event.preventDefault();
+
+                                // Close the dropdown in order not to mess with focus events and so on
+                                this._closeDropdown();
+
+                                // Highlight last option
+                                this.addHighlight(this.insertedOptionsCount());
+                                break;
+                            }
+                        }
+
                         if (this.isInHighlightedMode()) {
                             event.preventDefault();
 
                             this.__navigateLeftInHighlightedMode();
-                            break;
-                        }
-
-                        if (this.isInputFieldFocused() && aria.utils.Caret.getPosition(this.getTextInputField()).start === 0) {
-                            event.preventDefault();
-
-                            // Close the dropdown in order not to mess with focus events and so on
-                            if (this._cfg.popupOpen) {
-                                this.$DropDownTrait._closeDropdown.call(this);
-                            }
-
-                            // Highlight last option
-                            this.addHighlight(this.insertedOptionsCount());
                             break;
                         }
                     }
@@ -392,12 +392,7 @@ Aria.classDefinition({
                     break;
 
                 case event.KC_TAB:
-                    if (this.isInHighlightedMode()) {
-                        event.preventDefault();
-
-                        this.removeHighlight();
-                        this._enterInputField();
-                    } else {
+                    if (this.isInputFieldFocused()) {
                         if (aria.utils.String.trim(inputFieldValue) !== "") {
                             if (this.controller.freeText) {
                                 event.preventDefault();
