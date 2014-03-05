@@ -279,7 +279,7 @@ Aria.classDefinition({
             }
             suggestionMarkup = "<div class='xMultiAutoComplete_" + cfg.sclass + "_options' "
                     + "><span class='xMultiAutoComplete_Option_Text' >" + label
-                    + "</span><a href='javascript:void(0);' class='closeBtn'></a></div>";
+                    + "</span><span class='closeBtn'></span></div>";
             return suggestionMarkup;
         },
         /**
