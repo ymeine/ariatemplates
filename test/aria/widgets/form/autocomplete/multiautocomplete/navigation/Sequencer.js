@@ -102,7 +102,7 @@ Aria.classDefinition({
          * @see root
          */
         run : function(spec) {
-            var onend = spec.onend;
+            var onend = this.resolveMethod(spec.onend);
             var tasks = spec.tasks;
 
             var sequence = this.root(tasks);
@@ -205,18 +205,80 @@ Aria.classDefinition({
          * @param[in] spec Enhanced task specifications. Defaults and method resolution can be applied. See full description for more details.
          */
         task: function(spec) {
-            var scope = this.scope;
-            var fn = scope[spec.method];
-            var asynchronous = spec.asynchronous != null ? !!spec.asynchronous : this.asynchronous;
+            // Input arguments processing --------------------------------------
+
+            // -------------------------------------------------------------- cb
+
+            var cb = this.resolveMethod(spec);
+
+            // ---------------------------------------------------- asynchronous
+
+            var asynchronous = spec.asynchronous;
+
+            if (asynchronous == null) {
+                asynchronous = this.asynchronous;
+
+            }
+
+            asynchronous = !!asynchronous;
+
+            // Processing ------------------------------------------------------
 
             return new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Task({
                 name: spec.name,
-                fn: fn,
-                scope: scope,
-                args: spec.args,
+                fn: cb.fn,
+                scope: cb.scope,
+                args: cb.args,
                 asynchronous: asynchronous,
                 trace: this.trace
             });
+        },
+
+        /**
+         * Gives a "normalized" callback specifications from the input specifications.
+         *
+         * Defaults and so on are applied.
+         *
+         * @param[in] {Object} spec The specifications of a task, or anything embedding a callback specifications
+         */
+        resolveMethod : function(spec) {
+            // Input arguments processing --------------------------------------
+
+            // ----------------------------------------------------------- scope
+
+            var scope = spec.scope;
+
+            if (scope == null) {
+                scope = this.scope;
+            }
+
+            // -------------------------------------------------------------- fn
+
+            var fn = spec.fn;
+
+            if (fn == null) {
+                fn = spec.method;
+            }
+
+            if (aria.utils.Type.isString(fn)) {
+                fn = scope[fn];
+            }
+
+            if (!aria.utils.Type.isFunction(fn)) {
+                throw new Error('Wrong function definition, got: ' + fn);
+            }
+
+            // ------------------------------------------------------------ args
+
+            var args = spec.args;
+
+            // Return ----------------------------------------------------------
+
+            return {
+                fn: fn,
+                scope: scope,
+                args: args
+            }
         }
     }
 });

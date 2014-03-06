@@ -22,6 +22,7 @@ Aria.classDefinition({
         "aria.utils.Type",
         "aria.utils.Array",
 
+        "aria.core.Timer",
         "aria.utils.Caret",
 
         "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer",
@@ -33,11 +34,18 @@ Aria.classDefinition({
         this.$BaseMultiAutoCompleteTestCase.constructor.call(this);
         this.HELPERS = test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Helpers;
 
+        // Configuration -------------------------------------------------------
+
+        this.defaultDelay = 100;
+        this.enableTracing = false;
+
+        // Main sequence -------------------------------------------------------
+
         this.sequencer = new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
             scope: this,
             asynchronous: true,
             trace: {
-                enable: true,
+                enable: this.enableTracing,
                 collapsed: false,
                 logTask: false,
                 color: 'blue'
@@ -53,26 +61,27 @@ Aria.classDefinition({
          **********************************************************************/
 
         /**
-         * Enter given sequence of text.
+         * Types given keys in one shot into the currently focused element in the page.
          *
-         * @param[in] {Object|test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Task} taskOrCb A classical callback definition or the task context in which this method is being called.
+         * @param[in] task The task context in which this method is being called.
+         * @param[in] {String} keys Key identifiers
+         */
+        __type : function(task, keys) {
+            this.synEvent.type(this.HELPERS.getFocusedElement(), keys, {
+                fn : task.end,
+                scope : task
+            });
+        },
+
+        /**
+         * Enters given sequence of text.
+         *
+         * @param[in] task The task context in which this method is being called.
          * @param[in] {String|Array{String}} textSequence An array of input or a simple string (corresponding to a sequence with one item)
          * @param[in] {Number} delay An integer corresponding to the time to wait between each input of the given text sequence.
          */
-        __type : function(taskOrCb, textSequence, delay) {
+        __typeSequence : function(task, textSequence, delay) {
             // Input arguments processing --------------------------------------
-
-            // -------------------------------------------------------------- cb
-
-            var cb;
-            if (aria.utils.Type.isInstanceOf(taskOrCb, "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Task")) {
-                cb = {
-                    fn: taskOrCb.end,
-                    scope: taskOrCb
-                };
-            } else {
-                cb = taskOrCb;
-            }
 
             // ---------------------------------------------------- textSequence
 
@@ -85,14 +94,55 @@ Aria.classDefinition({
             // ----------------------------------------------------------- delay
 
             if (delay == null) {
-                delay = 100;
+                delay = this.defaultDelay;
             }
 
             // Processing ------------------------------------------------------
 
-            this.type(null, {
-                text: textSequence,
-                cb: cb,
+            var sequencer = new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
+                scope: this,
+                asynchronous: true,
+                trace: {
+                    enable: this.enableTracing,
+                    collapsed: false,
+                    logTask: false,
+                    color: 'green'
+                }
+            });
+
+            var tasks = [];
+            aria.utils.Array.forEach(textSequence, function(text) {
+                tasks.push({
+                    name: 'Type...',
+                    method: '__type',
+                    args: [text]
+                });
+                tasks.push({
+                    name: 'Wait...',
+                    method: '__wait',
+                    args: [delay]
+                });
+            });
+
+            sequencer.run({
+                onend: {
+                    fn: 'end',
+                    scope: task
+                },
+                tasks: tasks
+            });
+        },
+
+        /**
+         * Waits for a given time.
+         *
+         * @param[in] task The task context in which this method is being called.
+         * @param[in] {Number} delay The duration to wait.
+         */
+        __wait : function(task, delay) {
+            aria.core.Timer.addCallback({
+                fn: task.end,
+                scope: task,
                 delay: delay
             });
         },
@@ -117,7 +167,7 @@ Aria.classDefinition({
 
             var keySequence = this.HELPERS.repeat("[" + keyName + "]", times);
 
-            this.__type(task, keySequence);
+            this.__typeSequence(task, keySequence);
         },
 
 
@@ -173,7 +223,7 @@ Aria.classDefinition({
          * @param[in] {String} text The text to enter in the input
          */
         __insertText : function(task, text) {
-            this.__type(task, text);
+            this.__typeSequence(task, text);
         },
 
         /**
@@ -202,16 +252,36 @@ Aria.classDefinition({
                 text.push("[enter]");
             });
 
-            this.__type({
-                fn: function() {
-                    // Restore field state -------------------------------------
-                    field.value = backup.value;
-                    aria.utils.Caret.setPosition(field, backup.caret);
-
-                    task.end();
+            var sequencer = new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
+                scope: this,
+                trace: {
+                    enable: this.enableTracing,
+                    logTask: false,
+                    collapsed: false,
+                    color: 'orange'
+                }
+            }).run({
+                onend: {
+                    fn: 'end',
+                    scope: task
                 },
-                scope: this
-            }, text);
+                tasks: [
+                    {
+                        name: 'Type sequence',
+                        method: '__typeSequence',
+                        args: [text],
+                        asynchronous: true
+                    },
+                    {
+                        name: 'Restore field state',
+                        fn: function() {
+                            field.value = backup.value;
+                            aria.utils.Caret.setPosition(field, backup.caret);
+                        },
+                        asynchronous: false
+                    }
+                ]
+            });
         },
 
 
@@ -342,7 +412,7 @@ Aria.classDefinition({
         runTemplateTest : function() {
             this.sequencer.run({
                 onend: {
-                    fn: this.end,
+                    fn: 'end',
                     scope: this
                 },
 

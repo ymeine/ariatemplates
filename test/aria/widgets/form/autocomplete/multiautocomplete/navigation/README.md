@@ -1,4 +1,4 @@
-Purpose of this test: test the navigation feature.
+Purpose of this test: test the navigation feature in the MultiAutoComplete.
 
 To know what has to be tested, refer to the specifications, and to the documentation too (which is a more user-friendly explanation of the specifications).
 
@@ -6,106 +6,68 @@ To know what has to be tested, refer to the specifications, and to the documenta
 
 
 
-# Test description
+# Architecture of the tests
 
-The following is the explanation of the feature from testing point of view. It describes all the conditions to test, edge cases, etc., in a structured manner. It's somewhere between the specifications and the documentation.
+This is mainly GUI test, which means that simulating user actions is necessary. This is an asynchronous process.
 
-Reading the following, it should be easy to translate it into functions, conditions and checking.
+After a user action has been simulated, some checks have to be done. This is usually a synchronous process.
 
-## Test: Navigation
+It is usually quite painful to handle mix of synchronous and asynchronous from a pure programming point of view. However, there is a class in the framework which handles the two in a quite nice way: `aria.core.Sequencer`. The thing is that I think it would have been enhanced, so I rebuilt a Sequencing system based on this one. Those are the files:
 
-Navigation can be done __only__ using the __left__ and __right__ __arrow keys__. Thus it moves _something_ among _a set of items_ towards the _previous_ direction or the _next_ direction.
+* [`Sequencer.js`](./Sequencer.js)
+* [`Sequence.js`](./Sequence.js)
+* [`Task.js`](./Task.js)
 
-### Context: Inside the input field
+Please refer to those files for embedded documentation.
 
-#### Direction: To the right
+Concerning [`Helpers.js`](./Helpers.js), as its name suggests, it holds a set of standard functions enhancing what is already present in the framework utilities.
 
-* if there is a character after the caret: moves the caret after it
-* otherwise: does nothing (it reached the end of the input)
+## The actual test file
 
-#### Direction: To the left
+[`MultiAutoCompleteNavigation.js`](./MultiAutoCompleteNavigation.js)
 
-* if there is a character before the caret: moves the caret before it
-* otherwise (we are at the beginning if the input)
-	* if there is no selected option: does nothing
-	* otherwise
-		* enters the highlighted mode
-		* highlights the last selected option
+The first part of the file contains a lot of utility functions dealing with both user actions and checks for the tests. They all support the invocation through the sequencing system invoked above (proper synchronization is done).
 
-### Context: In highlighted mode
+The rest is simply the definition of the hierarchy of tasks to be executed to play the test, according to how the sequencing system works. It's quite straightforward to understand.
 
-#### Direction: To the left
+## Future improvements
 
-* navigating to the left highlights previous options until the first one is reached, then it does nothing
+### Asynchronous state specifications
 
-#### Direction: To the right
+For now the asynchronous information is put along with a task definition, while it is actually related to the function running it. Therefore this should be moved.
 
-* if there is an option after the currently highlighted one: selects the former
-* otherwise (currently selected one is the last one): gives focus to the input field, placing the caret at its beginning
+Imagine multiple tasks using the same function behind: what changes between them is only the name/description and the arguments, that's alls.
 
-## Test: Tab behavior
+So instead of referencing simple function when defining a task, I think we should refer to an intermediate object: a wrapper around a function, holding the asynchronous information. Thus all the methods refereed by the tasks would not be defined as methods of the class, but as properties referencing functions (closures or still actual methods) along with the `asynchronous` flag.
 
-### Context: Inside the input field
+### Use objects instead of positional arguments
 
-Gives focus to the next focusable element in the page (if any).
+This is an issue for synchronous methods mostly.
 
-### Context: In highlighted mode
+Indeed, an asynchronous method will need to receives something to notify its end: usually a callback, and in our sequencing system a task (with a `end` method behind).
 
-Gives focus to the input field, placing the caret at its betginning.
+However, a synchronous method doesn't care about that, and some of them might get called in a context completely different from the one of a sequence.
 
+> But where is the problem if anyway they don't use the task?
 
+The problem is about passing the reference to the task. For now by convention it's the very first argument of the function. So if the function is invoked without a task but with other arguments, the first one must be set to `null` or `undefined`.
 
-# Test requirements
+This is in fact a more common issue: __dealing with dynamic number of arguments__.
 
-* tests
-	* get caret position in input
-	* know if highlighted mode is on
-	* get currently highlighted item
-* actions
-	* set text of input field
-	* insert/remove selected options
-	* send keys:
-		* left arrow
-		* right arrow
-		* tab
+There are two possibilities: using positional arguments or using a single argument with an object. I suggest the second one maybe.
 
+### Complete overhaul of the test
 
+Instead of having one single tests executing of full scenario, inside which each task and thus action or test depends on the state of the widget left by the previous one, it would be good to split the tests into multiple ones.
 
-# States to test
+This way, every tests will start form a clean state, configuring the widget as it needs and doing the proper action to reach a state where there is something to test.
 
-* Currently focused element
-* Position
-	* caret
-	* or highlighted item
-* Highlighted mode on or not
+Also, this would take the most of the test runner: its sequencing capabilities, its error reporting, etc. (that does not mean we should drop our sequencing system, it's very useful and ca be used to implement each test).
 
-
-
-
-
-# Test implementation notes
-
-A test is a sequence of:
-
-* do
-* check: continue or not
-
-With each step independent or not.
-
-Moreover, each test can be either synchronous or asynchronous (this is important for programming style).
-
-So since the `aria.core.Sequencer` is able to execute in series a set of tasks; either synchronous or asynchronous, I think testing a module is just a matter of putting tasks in a sequencer.
-
-Then, how do we build tasks?
-
-There are two things: the actual task implementation and the architecture of the tasks.
-
-The latter is just a way to organize tasks in a logical way: a tree. So a task can be either a function, or another set of tasks, that is a sequencer in practice. Since the implementation of `aria.core.Sequencer` only accepts functions, those child sequences should be wrapped in functions which create them.
-
+With this solution, I would introduce an intermediate class as a base class for the navigation tests. It would hold all the utilities for user actions and checks. Then in each folder there would be a test inheriting from this class, setting the widget configuration, and simply creating a sequence of tasks.
 
 
 
 # Missing tests
 
-* Probably the non-freetext mode.
-* ...
+The scenario in non-freetext mode has not been tested yet...
