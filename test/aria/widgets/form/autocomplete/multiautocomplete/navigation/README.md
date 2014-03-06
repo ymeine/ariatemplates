@@ -22,13 +22,15 @@ Please refer to those files for embedded documentation.
 
 Concerning [`Helpers.js`](./Helpers.js), as its name suggests, it holds a set of standard functions enhancing what is already present in the framework utilities.
 
-## The actual test file
+## The actual test files
 
-[`MultiAutoCompleteNavigation.js`](./MultiAutoCompleteNavigation.js)
+There is one base class which sets up multiple things ([`BaseTestCase.js`](./BaseTestCase.js)):
 
-The first part of the file contains a lot of utility functions dealing with both user actions and checks for the tests. They all support the invocation through the sequencing system invoked above (proper synchronization is done).
+* helpers, shortcuts are put in place
+* utility methods are defined: to simulate user actions and to do checks for the tests. They all support the invocation through the sequencing system invoked above (proper synchronization is done).
+* the main sequence is instantiated, ready to be used directly by actual tests
 
-The rest is simply the definition of the hierarchy of tasks to be executed to play the test, according to how the sequencing system works. It's quite straightforward to understand.
+Then actual tests are defined in subfolders. They all define their own hierarchy of tasks to be executed to play the test, according to how the sequencing system works. It's quite straightforward to understand.
 
 ## Future improvements
 
