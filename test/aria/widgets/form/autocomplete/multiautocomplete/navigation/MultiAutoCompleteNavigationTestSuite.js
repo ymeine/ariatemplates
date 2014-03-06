@@ -22,7 +22,10 @@ Aria.classDefinition({
         this.$TestSuite.constructor.call(this);
 
         this.addTests("test.aria.widgets.form.autocomplete.multiautocomplete.navigation.input.InputFieldTestCase");
+        this.addTests("test.aria.widgets.form.autocomplete.multiautocomplete.navigation.input.InputFieldNoFreeTextTestCase");
+
         this.addTests("test.aria.widgets.form.autocomplete.multiautocomplete.navigation.highlighting.HighlightingTestCase");
+
         this.addTests("test.aria.widgets.form.autocomplete.multiautocomplete.navigation.tab.TabTestCase");
     }
 });
