@@ -53,6 +53,23 @@ Aria.classDefinition({
                 color: 'blue'
             }
         });
+
+        var synchronousMethods = [
+            'checkCaretAndFocus',
+            'checkHighlightedOption',
+            'checkInsertedOptionsCount',
+            'shouldBeInHighlightedMode',
+            'shouldInputFieldBeFocused'
+        ]
+
+        aria.utils.Array.forEach(synchronousMethods, function(name) {
+            this.sequencer.registerMethod(
+                {
+                    name: name,
+                    asynchronous: false
+                }
+            );
+        }, this);
     },
 
     $prototype : {

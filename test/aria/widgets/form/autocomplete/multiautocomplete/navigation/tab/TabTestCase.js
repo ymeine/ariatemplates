@@ -56,8 +56,7 @@ Aria.classDefinition({
                 {
                     name: 'Check that input field actually does not have focus',
                     method: 'shouldInputFieldBeFocused',
-                    args: [false],
-                    asynchronous: false
+                    args: [false]
                 },
                 {
                     name: 'Press tab while in highlighted mode',
@@ -66,8 +65,7 @@ Aria.classDefinition({
                 {
                     name: 'Check focus went back to the input field',
                     method: 'shouldInputFieldBeFocused',
-                    args: [true],
-                    asynchronous: false
+                    args: [true]
                 }
             ];
         },
@@ -81,8 +79,7 @@ Aria.classDefinition({
                 {
                     name: 'Check that input field lost focus',
                     method: 'shouldInputFieldBeFocused',
-                    args: [false],
-                    asynchronous: false
+                    args: [false]
                 }
             ];
         }

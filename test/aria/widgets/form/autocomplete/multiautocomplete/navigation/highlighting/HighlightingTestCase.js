@@ -60,8 +60,7 @@ Aria.classDefinition({
             {
                 name: 'Check that the previous option has been highlighted (exclusively)',
                 method: 'checkHighlightedOption',
-                args: [1],
-                asynchronous: false
+                args: [1]
             },
             {
                 name: 'Navigate left while on the left edge of the selected options container',
@@ -70,8 +69,7 @@ Aria.classDefinition({
             {
                 name: 'Check that nothing changed',
                 method: 'checkHighlightedOption',
-                args: [1],
-                asynchronous: false
+                args: [1]
             }
         ],
 
@@ -84,8 +82,7 @@ Aria.classDefinition({
                 {
                     name: 'Check that the next option has been highlighted (exclusively)',
                     method: 'checkHighlightedOption',
-                    args: [2],
-                    asynchronous: false
+                    args: [2]
                 },
                 {
                     name: 'Navigate right beyond the right edge of the list of selected options',
@@ -94,14 +91,12 @@ Aria.classDefinition({
                 {
                     name: 'Check that the highlighted mode is off',
                     method: 'shouldBeInHighlightedMode',
-                    args: [false],
-                    asynchronous: false
+                    args: [false]
                 },
                 {
                     name: 'Also check that the input field has focus and the caret is at its beginning',
                     method: 'checkCaretAndFocus',
-                    args: [0],
-                    asynchronous: false
+                    args: [0]
                 }
             ];
         }

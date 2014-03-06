@@ -37,8 +37,7 @@ Aria.classDefinition({
                 {
                     name: 'Check caret went back to 0',
                     method: 'checkCaretAndFocus',
-                    args: [0],
-                    asynchronous: false
+                    args: [0]
                 },
                 // Left on the edge and no selected option ---------------------
                 {
@@ -48,8 +47,7 @@ Aria.classDefinition({
                 {
                     name: 'Check caret remained at position 0',
                     method: 'checkCaretAndFocus',
-                    args: [0],
-                    asynchronous: false
+                    args: [0]
                 },
                 // Insert options & go back to right
                 {
@@ -69,8 +67,7 @@ Aria.classDefinition({
                 {
                     name: 'Check caret went back to 0',
                     method: 'checkCaretAndFocus',
-                    args: [0],
-                    asynchronous: false
+                    args: [0]
                 },
                 // Left on the edge and selected options present ---------------
                 {
@@ -80,14 +77,12 @@ Aria.classDefinition({
                 {
                     name: 'Check that the index of the highlighted option is corresponding to the one that was the last',
                     method: 'checkHighlightedOption',
-                    args: [2],
-                    asynchronous: false
+                    args: [2]
                 },
                 {
                     name: 'Also check that in free text mode the current text is added',
                     method: 'checkInsertedOptionsCount',
-                    args: [3],
-                    asynchronous: false
+                    args: [3]
                 }
             ]});
         }

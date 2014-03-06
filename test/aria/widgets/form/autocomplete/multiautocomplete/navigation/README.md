@@ -32,14 +32,6 @@ The rest is simply the definition of the hierarchy of tasks to be executed to pl
 
 ## Future improvements
 
-### Asynchronous state specifications
-
-For now the asynchronous information is put along with a task definition, while it is actually related to the function running it. Therefore this should be moved.
-
-Imagine multiple tasks using the same function behind: what changes between them is only the name/description and the arguments, that's alls.
-
-So instead of referencing simple function when defining a task, I think we should refer to an intermediate object: a wrapper around a function, holding the asynchronous information. Thus all the methods refereed by the tasks would not be defined as methods of the class, but as properties referencing functions (closures or still actual methods) along with the `asynchronous` flag.
-
 ### Use objects instead of positional arguments
 
 This is an issue for synchronous methods mostly.
