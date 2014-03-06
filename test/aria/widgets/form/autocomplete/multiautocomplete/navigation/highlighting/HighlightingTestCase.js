@@ -17,40 +17,42 @@ Aria.classDefinition({
     $classpath : "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.highlighting.HighlightingTestCase",
     $extends : "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.BaseTestCase",
 
+    $constructor : function() {
+        this.$BaseTestCase.constructor.call(this, 'Navigation in highlighted mode');
+    },
+
     $prototype : {
-        runTemplateTest : function() {
-            this.sequencer.run({tasks: [
-                {
-                    name: 'Focus input field',
-                    method: 'focusInputField'
-                },
-                {
-                    name: 'Insert text to be in a usual use case (this text has some matches)',
-                    method: 'insertText',
-                    args: ['a']
-                },
-                {
-                    name: 'Insert options',
-                    method: 'selectSuggestions',
-                    args: [['a']]
-                },
-                {
-                    name: 'Select last option with navigation',
-                    method: 'pressLeftArrow'
-                },
+        _initialization : [
+            {
+                name: 'Focus input field',
+                method: 'focusInputField'
+            },
+            {
+                name: 'Insert text to be in a usual use case (this text has some matches)',
+                method: 'insertText',
+                args: ['a']
+            },
+            {
+                name: 'Insert options',
+                method: 'selectSuggestions',
+                args: [['a']]
+            },
+            {
+                name: 'Select last option with navigation',
+                method: 'pressLeftArrow'
+            }
+        ],
 
-
-
-                {
-                    name: 'Left navigation in highlighted mode',
-                    children: '__testLeftNavigationInHighlightedMode'
-                },
-                {
-                    name: 'Right navigation in highlighted mode',
-                    children: '__testRightNavigationInHighlightedMode'
-                }
-            ]});
-        },
+        _test : [
+            {
+                name: 'Left navigation in highlighted mode',
+                children: '__testLeftNavigationInHighlightedMode'
+            },
+            {
+                name: 'Right navigation in highlighted mode',
+                children: '__testRightNavigationInHighlightedMode'
+            }
+        ],
 
         __testLeftNavigationInHighlightedMode : [
             {
@@ -73,32 +75,30 @@ Aria.classDefinition({
             }
         ],
 
-        __testRightNavigationInHighlightedMode : function() {
-            return [
-                {
-                    name: 'Navigate right while in highlighted mode',
-                    method: 'pressRightArrow'
-                },
-                {
-                    name: 'Check that the next option has been highlighted (exclusively)',
-                    method: 'checkHighlightedOption',
-                    args: [2]
-                },
-                {
-                    name: 'Navigate right beyond the right edge of the list of selected options',
-                    method: 'pressRightArrow'
-                },
-                {
-                    name: 'Check that the highlighted mode is off',
-                    method: 'shouldBeInHighlightedMode',
-                    args: [false]
-                },
-                {
-                    name: 'Also check that the input field has focus and the caret is at its beginning',
-                    method: 'checkCaretAndFocus',
-                    args: [0]
-                }
-            ];
-        }
+        __testRightNavigationInHighlightedMode : [
+            {
+                name: 'Navigate right while in highlighted mode',
+                method: 'pressRightArrow'
+            },
+            {
+                name: 'Check that the next option has been highlighted (exclusively)',
+                method: 'checkHighlightedOption',
+                args: [2]
+            },
+            {
+                name: 'Navigate right beyond the right edge of the list of selected options',
+                method: 'pressRightArrow'
+            },
+            {
+                name: 'Check that the highlighted mode is off',
+                method: 'shouldBeInHighlightedMode',
+                args: [false]
+            },
+            {
+                name: 'Also check that the input field has focus and the caret is at its beginning',
+                method: 'checkCaretAndFocus',
+                args: [0]
+            }
+        ]
     }
 });

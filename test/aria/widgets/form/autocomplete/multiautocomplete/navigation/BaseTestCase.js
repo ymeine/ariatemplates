@@ -30,13 +30,15 @@ Aria.classDefinition({
         "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Helpers"
     ],
 
-    $constructor : function() {
+    $constructor : function(name) {
         this.$BaseMultiAutoCompleteTestCase.constructor.call(this);
         this.HELPERS = test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Helpers;
 
+        this.name = name;
+
         // Configuration -------------------------------------------------------
 
-        this.defaultDelay = 100;
+        this.defaultDelay = 200;
         this.enableTracing = false;
 
         // Main sequence -------------------------------------------------------
@@ -76,6 +78,27 @@ Aria.classDefinition({
     },
 
     $prototype : {
+        runTemplateTest : function() {
+            this.sequencer.run({
+                tasks: [
+                    {
+                        name: this.name,
+                        children: [
+                            {
+                                name: 'Initialization',
+                                children: '_initialization'
+                            },
+
+                            {
+                                name: 'Test',
+                                children: '_test'
+                            }
+                        ]
+                    }
+                ]
+            });
+        },
+
         /***********************************************************************
          * Actions
          *
@@ -121,23 +144,6 @@ Aria.classDefinition({
 
             // Processing ------------------------------------------------------
 
-            var sequencer = new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
-                scope: this,
-
-                onend: {
-                    fn: 'end',
-                    scope: task
-                },
-
-                asynchronous: true,
-                trace: {
-                    enable: this.enableTracing,
-                    collapsed: false,
-                    logTask: false,
-                    color: 'green'
-                }
-            });
-
             var tasks = [];
             aria.utils.Array.forEach(textSequence, function(text) {
                 tasks.push({
@@ -152,7 +158,17 @@ Aria.classDefinition({
                 });
             });
 
-            sequencer.run({tasks: tasks});
+            new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
+                scope: this,
+
+                asynchronous: true,
+                trace: {
+                    enable: this.enableTracing,
+                    collapsed: false,
+                    logTask: false,
+                    color: 'green'
+                }
+            }).root(tasks).runAsTask(task);
         },
 
         /**
@@ -255,11 +271,12 @@ Aria.classDefinition({
          * @param[in] {Array{String}} inputs A list of text input values to use to match available suggestions. Only the first matching selection gets inserted.
          */
         selectSuggestions : function(task, inputs) {
-            // Backup field state ----------------------------------------------
+            // Backup state ----------------------------------------------------
 
             var field = this._getField();
             var backup = {
-                value:  field.value,
+                focused: this.HELPERS.getFocusedElement(),
+                value: field.value,
                 caret: aria.utils.Caret.getPosition(field)
             };
 
@@ -274,20 +291,11 @@ Aria.classDefinition({
                 text.push("[enter]");
             });
 
-            var sequencer = new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
-                scope: this,
-                onend: {
-                    fn: 'end',
-                    scope: task
+            var tasks = [
+                {
+                    name: 'Ensures input field is focused first',
+                    method: 'focusInputField'
                 },
-
-                trace: {
-                    enable: this.enableTracing,
-                    logTask: false,
-                    collapsed: false,
-                    color: 'orange'
-                }
-            }).run({tasks: [
                 {
                     name: 'Type sequence',
                     method: 'typeSequence',
@@ -295,14 +303,26 @@ Aria.classDefinition({
                     asynchronous: true
                 },
                 {
-                    name: 'Restore field state',
+                    name: 'Restore state',
                     fn: function() {
                         field.value = backup.value;
                         aria.utils.Caret.setPosition(field, backup.caret);
+                        backup.focused.focus();
                     },
                     asynchronous: false
                 }
-            ]});
+            ]
+
+            new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
+                scope: this,
+
+                trace: {
+                    enable: this.enableTracing,
+                    logTask: false,
+                    collapsed: false,
+                    color: 'orange'
+                }
+            }).root(tasks).runAsTask(task);
         },
 
 
