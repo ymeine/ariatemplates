@@ -54,6 +54,11 @@ Aria.classDefinition({
             }
         });
 
+        // ---------------------------------------------------------------------
+
+        // Registers methods that are synchronous
+        // The other ones will be considered asynchronous by default regarding the property set above
+        // Also, not all methods need that, only those that are going to be used directly in task definitions
         var synchronousMethods = [
             'checkCaretAndFocus',
             'checkHighlightedOption',
@@ -63,12 +68,10 @@ Aria.classDefinition({
         ]
 
         aria.utils.Array.forEach(synchronousMethods, function(name) {
-            this.sequencer.registerMethod(
-                {
-                    name: name,
-                    asynchronous: false
-                }
-            );
+            this.sequencer.registerMethod({
+                name: name,
+                asynchronous: false
+            });
         }, this);
     },
 
@@ -120,6 +123,12 @@ Aria.classDefinition({
 
             var sequencer = new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
                 scope: this,
+
+                onend: {
+                    fn: 'end',
+                    scope: task
+                },
+
                 asynchronous: true,
                 trace: {
                     enable: this.enableTracing,
@@ -143,13 +152,7 @@ Aria.classDefinition({
                 });
             });
 
-            sequencer.run({
-                onend: {
-                    fn: 'end',
-                    scope: task
-                },
-                tasks: tasks
-            });
+            sequencer.run({tasks: tasks});
         },
 
         /**
@@ -273,34 +276,33 @@ Aria.classDefinition({
 
             var sequencer = new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
                 scope: this,
+                onend: {
+                    fn: 'end',
+                    scope: task
+                },
+
                 trace: {
                     enable: this.enableTracing,
                     logTask: false,
                     collapsed: false,
                     color: 'orange'
                 }
-            }).run({
-                onend: {
-                    fn: 'end',
-                    scope: task
+            }).run({tasks: [
+                {
+                    name: 'Type sequence',
+                    method: 'typeSequence',
+                    args: [text],
+                    asynchronous: true
                 },
-                tasks: [
-                    {
-                        name: 'Type sequence',
-                        method: 'typeSequence',
-                        args: [text],
-                        asynchronous: true
+                {
+                    name: 'Restore field state',
+                    fn: function() {
+                        field.value = backup.value;
+                        aria.utils.Caret.setPosition(field, backup.caret);
                     },
-                    {
-                        name: 'Restore field state',
-                        fn: function() {
-                            field.value = backup.value;
-                            aria.utils.Caret.setPosition(field, backup.caret);
-                        },
-                        asynchronous: false
-                    }
-                ]
-            });
+                    asynchronous: false
+                }
+            ]});
         },
 
 
