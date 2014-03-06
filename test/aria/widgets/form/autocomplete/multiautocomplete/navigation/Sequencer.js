@@ -56,6 +56,8 @@ Aria.classDefinition({
      * @param[in] defaults {Object} Default properties. See full description for more information.
      */
     $constructor: function(defaults) {
+        this.__methods = {};
+
         // defaults ------------------------------------------------------------
 
         // --------------------------------------------------------------- scope
@@ -77,6 +79,15 @@ Aria.classDefinition({
         // --------------------------------------------------------------- trace
 
         this.trace = defaults.trace;
+
+        // --------------------------------------------------------------- onend
+
+        var onend = defaults.onend;
+
+        if (onend != null) {
+            onend = this.resolveMethod(onend);
+            this.onend = onend;
+        }
     },
 
     $prototype : {
@@ -102,11 +113,30 @@ Aria.classDefinition({
          * @see root
          */
         run : function(spec) {
-            var onend = this.resolveMethod(spec.onend);
+            // ----------------------------------------------------------- onend
+
+            var onend = spec.onend;
+
+            if (onend == null) {
+                onend = this.onend;
+
+                if (onend == null) {
+                    throw new Error('No end callback provided!');
+                }
+            } else {
+                onend = this.resolveMethod(onend);
+            }
+
+            // ----------------------------------------------------------- tasks
+
             var tasks = spec.tasks;
+
+            // Run -------------------------------------------------------------
 
             var sequence = this.root(tasks);
             sequence.run(onend.fn, onend.scope);
+
+            // Return -------------------------------------------------------------
 
             return sequence;
         },
@@ -133,13 +163,13 @@ Aria.classDefinition({
          *     <li>the sequence itself: this enables to build a hierarchy to be able to build a hierarchy of tasks, some of those can be Sequences</li>
          * </ul>
          *
-         * This method will recursively build the elements of the sequence that it is expected to create. The rule is simple: if an element contains a <code>children</code> property, it will be turend into a sequence, otherwise a simple task.
+         * This method will recursively build the elements of the sequence that it is expected to create. The rule is simple: if an element contains a <code>children</code> property, it will be turned into a sequence, otherwise a simple task.
          *
          * This <code>children</code> property corresponds to the elements of the sub-sequence, and so on. Here is what you can pass to specify them:
          * <ul>
          *     <li>a task spec as expected by the method <code>task</code></li>
          *     <li>a <code>Function</code> that will return this task spec</li>
-         *     <li>the name of the property (<code>String</code>) in the <code>scope</code> that contains either directly the task spec or a function that wil return it (as above)</li>
+         *     <li>the name of the property (<code>String</code>) in the <code>scope</code> that contains either directly the task spec or a function that will return it (as above)</li>
          * </ul>
          *
          *
@@ -205,31 +235,16 @@ Aria.classDefinition({
          * @param[in] spec Enhanced task specifications. Defaults and method resolution can be applied. See full description for more details.
          */
         task: function(spec) {
-            // Input arguments processing --------------------------------------
-
-            // -------------------------------------------------------------- cb
-
             var cb = this.resolveMethod(spec);
-
-            // ---------------------------------------------------- asynchronous
-
-            var asynchronous = spec.asynchronous;
-
-            if (asynchronous == null) {
-                asynchronous = this.asynchronous;
-
-            }
-
-            asynchronous = !!asynchronous;
-
-            // Processing ------------------------------------------------------
 
             return new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Task({
                 name: spec.name,
+
                 fn: cb.fn,
                 scope: cb.scope,
                 args: cb.args,
-                asynchronous: asynchronous,
+                asynchronous: cb.asynchronous,
+
                 trace: this.trace
             });
         },
@@ -242,22 +257,48 @@ Aria.classDefinition({
          * @param[in] {Object} spec The specifications of a task, or anything embedding a callback specifications
          */
         resolveMethod : function(spec) {
+            if (aria.utils.Type.isString(spec)) {
+                spec = {fn: spec};
+            }
+
             // Input arguments processing --------------------------------------
+
+            // ------------------------------------------------------------ args
+
+            var args = spec.args;
+
+            // ---------------------------------------------------------- fn (1)
+
+            var fn = spec.fn;
+
+            if (fn == null) {
+                fn = spec.method;
+            }
+
+            var registered;
+            if (aria.utils.Type.isString(fn)) {
+                registered = this.__methods[fn];
+            }
+
+            if (registered == null) {
+                registered = {};
+            }
 
             // ----------------------------------------------------------- scope
 
             var scope = spec.scope;
 
             if (scope == null) {
+                scope = registered.scope;
+            }
+            if (scope == null) {
                 scope = this.scope;
             }
 
-            // -------------------------------------------------------------- fn
-
-            var fn = spec.fn;
+            // ---------------------------------------------------------- fn (2)
 
             if (fn == null) {
-                fn = spec.method;
+                fn = registered.fn;
             }
 
             if (aria.utils.Type.isString(fn)) {
@@ -268,17 +309,47 @@ Aria.classDefinition({
                 throw new Error('Wrong function definition, got: ' + fn);
             }
 
-            // ------------------------------------------------------------ args
 
-            var args = spec.args;
+            // ---------------------------------------------------- asynchronous
+
+            var asynchronous = spec.asynchronous;
+
+            if (asynchronous == null) {
+                asynchronous = registered.asynchronous;
+            }
+
+            if (asynchronous == null) {
+                asynchronous = this.asynchronous;
+            }
+
+            asynchronous = !!asynchronous;
 
             // Return ----------------------------------------------------------
 
             return {
                 fn: fn,
                 scope: scope,
-                args: args
-            }
+                args: args,
+                asynchronous: asynchronous
+            };
+        },
+
+        registerMethod : function(spec) {
+            var name = spec.name;
+            var asynchronous = spec.asynchronous;
+            var scope = spec.scope;
+
+            this.__methods[name] = {
+                fn: name,
+                asynchronous: asynchronous,
+                scope: scope
+            };
+        },
+
+        registerMethods : function(specs) {
+            aria.utils.Array.forEach(specs, function(spec) {
+                this.registerMethod(spec);
+            }, this);
         }
     }
 });

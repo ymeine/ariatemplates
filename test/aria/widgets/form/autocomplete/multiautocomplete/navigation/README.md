@@ -56,15 +56,6 @@ This is in fact a more common issue: __dealing with dynamic number of arguments_
 
 There are two possibilities: using positional arguments or using a single argument with an object. I suggest the second one maybe.
 
-### Complete overhaul of the test
-
-Instead of having one single tests executing of full scenario, inside which each task and thus action or test depends on the state of the widget left by the previous one, it would be good to split the tests into multiple ones.
-
-This way, every tests will start form a clean state, configuring the widget as it needs and doing the proper action to reach a state where there is something to test.
-
-Also, this would take the most of the test runner: its sequencing capabilities, its error reporting, etc. (that does not mean we should drop our sequencing system, it's very useful and ca be used to implement each test).
-
-With this solution, I would introduce an intermediate class as a base class for the navigation tests. It would hold all the utilities for user actions and checks. Then in each folder there would be a test inheriting from this class, setting the widget configuration, and simply creating a sequence of tasks.
 
 
 

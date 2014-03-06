@@ -14,7 +14,7 @@
  */
 
 Aria.classDefinition({
-    $classpath : "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.MultiAutoCompleteNavigation",
+    $classpath : "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.BaseTestCase",
 
     $extends : "test.aria.widgets.form.autocomplete.multiautocomplete.BaseMultiAutoCompleteTestCase",
 
@@ -43,6 +43,8 @@ Aria.classDefinition({
 
         this.sequencer = new test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequencer({
             scope: this,
+            onend: 'end',
+
             asynchronous: true,
             trace: {
                 enable: this.enableTracing,
@@ -66,7 +68,7 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {String} keys Key identifiers
          */
-        __type : function(task, keys) {
+        type : function(task, keys) {
             this.synEvent.type(this.HELPERS.getFocusedElement(), keys, {
                 fn : task.end,
                 scope : task
@@ -80,7 +82,7 @@ Aria.classDefinition({
          * @param[in] {String|Array{String}} textSequence An array of input or a simple string (corresponding to a sequence with one item)
          * @param[in] {Number} delay An integer corresponding to the time to wait between each input of the given text sequence.
          */
-        __typeSequence : function(task, textSequence, delay) {
+        typeSequence : function(task, textSequence, delay) {
             // Input arguments processing --------------------------------------
 
             // ---------------------------------------------------- textSequence
@@ -114,12 +116,12 @@ Aria.classDefinition({
             aria.utils.Array.forEach(textSequence, function(text) {
                 tasks.push({
                     name: 'Type...',
-                    method: '__type',
+                    method: 'type',
                     args: [text]
                 });
                 tasks.push({
                     name: 'Wait...',
-                    method: '__wait',
+                    method: 'wait',
                     args: [delay]
                 });
             });
@@ -139,7 +141,7 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {Number} delay The duration to wait.
          */
-        __wait : function(task, delay) {
+        wait : function(task, delay) {
             aria.core.Timer.addCallback({
                 fn: task.end,
                 scope: task,
@@ -154,7 +156,7 @@ Aria.classDefinition({
          * @param[in] {String} keyName The name of the key to press.
          * @param[in] {Number} times The number of times to press the key. Defaults to 1.
          */
-        __pressKey : function(task, keyName, times) {
+        pressKey : function(task, keyName, times) {
             // Input arguments processing --------------------------------------
 
             // ----------------------------------------------------------- times
@@ -167,33 +169,33 @@ Aria.classDefinition({
 
             var keySequence = this.HELPERS.repeat("[" + keyName + "]", times);
 
-            this.__typeSequence(task, keySequence);
+            this.typeSequence(task, keySequence);
         },
 
 
         /**
          * Presses the left arrow key.
          *
-         * @see __pressKey
+         * @see pressKey
          */
-        __pressLeftArrow : function() {
-            this.__pressKey.apply(this, this.HELPERS.insertInArray(arguments, 'left', 1));
+        pressLeftArrow : function() {
+            this.pressKey.apply(this, this.HELPERS.insertInArray(arguments, 'left', 1));
         },
         /**
          * Presses the right arrow key.
          *
-         * @see __pressKey
+         * @see pressKey
          */
-        __pressRightArrow : function() {
-            this.__pressKey.apply(this, this.HELPERS.insertInArray(arguments, 'right', 1));
+        pressRightArrow : function() {
+            this.pressKey.apply(this, this.HELPERS.insertInArray(arguments, 'right', 1));
         },
         /**
          * Presses the tab key.
          *
-         * @see __pressKey
+         * @see pressKey
          */
-        __pressTab : function() {
-            this.__pressKey.apply(this, this.HELPERS.insertInArray(arguments, 'tab', 1));
+        pressTab : function() {
+            this.pressKey.apply(this, this.HELPERS.insertInArray(arguments, 'tab', 1));
         },
 
 
@@ -209,7 +211,7 @@ Aria.classDefinition({
          *
          * @param[in] task The task context in which this method is being called.
          */
-        __focusInputField : function(task) {
+        focusInputField : function(task) {
             this.synEvent.click(this._getField(), {
                 fn: task.end,
                 scope: task
@@ -222,8 +224,8 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {String} text The text to enter in the input
          */
-        __insertText : function(task, text) {
-            this.__typeSequence(task, text);
+        insertText : function(task, text) {
+            this.typeSequence(task, text);
         },
 
         /**
@@ -232,7 +234,7 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {Array{String}} inputs A list of text input values to use to match available suggestions. Only the first matching selection gets inserted.
          */
-        __selectSuggestions : function(task, inputs) {
+        selectSuggestions : function(task, inputs) {
             // Backup field state ----------------------------------------------
 
             var field = this._getField();
@@ -268,7 +270,7 @@ Aria.classDefinition({
                 tasks: [
                     {
                         name: 'Type sequence',
-                        method: '__typeSequence',
+                        method: 'typeSequence',
                         args: [text],
                         asynchronous: true
                     },
@@ -297,7 +299,7 @@ Aria.classDefinition({
          *
          * @see aria.widgets.form.MultiAutoComplete.isInputFieldFocused
          */
-        __isInputFieldFocused : function() {
+        isInputFieldFocused : function() {
             return this._getWidgetInstance().isInputFieldFocused();
         },
 
@@ -306,7 +308,7 @@ Aria.classDefinition({
          *
          * @see aria.widgets.form.MultiAutoComplete.isInHighlightedMode
          */
-        __isInHighlightedMode : function() {
+        isInHighlightedMode : function() {
             return this._getWidgetInstance().isInHighlightedMode();
         },
 
@@ -315,7 +317,7 @@ Aria.classDefinition({
          *
          * @see aria.widgets.form.MultiAutoComplete.insertedOptionsCount
          */
-        __getInsertedOptionsCount : function() {
+        getInsertedOptionsCount : function() {
             return this._getWidgetInstance().insertedOptionsCount();
         },
 
@@ -330,10 +332,10 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {Number} count The expected number of inserted options.
          *
-         * @see __getInsertedOptionsCount
+         * @see getInsertedOptionsCount
          */
-        __checkInsertedOptionsCount : function(task, count) {
-            var actualCount = this.__getInsertedOptionsCount();
+        checkInsertedOptionsCount : function(task, count) {
+            var actualCount = this.getInsertedOptionsCount();
 
             this.assertEquals(count, actualCount, "The number of selected options is not as expected: " + actualCount + " instead of " + count);
         },
@@ -346,10 +348,10 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {Boolean} should <code>true</code> if it should be in highlighted mode, <code>false</code> otherwise.
          *
-         * @see __isInHighlightedMode
+         * @see isInHighlightedMode
          */
-        __shouldBeInHighlightedMode : function(task, should) {
-            var isInHighlightedMode = this.__isInHighlightedMode();
+        shouldBeInHighlightedMode : function(task, should) {
+            var isInHighlightedMode = this.isInHighlightedMode();
             if (should) {
                 this.assertTrue(isInHighlightedMode, "Widget is not in highlighted mode");
             } else {
@@ -362,7 +364,7 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {Number} index Corresponds to the index of the getHighlight method (1-based)
          */
-        __checkHighlightedOption : function(task, index) {
+        checkHighlightedOption : function(task, index) {
             this.checkHighlightedElementsIndices([index]);
         },
 
@@ -375,10 +377,10 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {Boolean} should <code>true</code> if it should be focused, <code>false</code> otherwise.
          *
-         * @see __isInputFieldFocused
+         * @see isInputFieldFocused
          */
-        __shouldInputFieldBeFocused : function(task, should) {
-            var isFocused = this.__isInputFieldFocused();
+        shouldInputFieldBeFocused : function(task, should) {
+            var isFocused = this.isInputFieldFocused();
             if (should) {
                 this.assertTrue(isFocused, "Input field is not focused");
             } else {
@@ -392,269 +394,13 @@ Aria.classDefinition({
          * @param[in] task The task context in which this method is being called.
          * @param[in] {Number} expectedPosition The expected position of the caret. Only the start index. 0-based.
          *
-         * @see __shouldInputFieldBeFocused
+         * @see shouldInputFieldBeFocused
          */
-        __checkCaretAndFocus : function(task, expectedPosition) {
-            this.__shouldInputFieldBeFocused(null, true);
+        checkCaretAndFocus : function(task, expectedPosition) {
+            this.shouldInputFieldBeFocused(null, true);
 
             var position = aria.utils.Caret.getPosition(this._getField()).start;
             this.assertEquals(position, expectedPosition, "Actual caret position: " + position + ". Expected: " + expectedPosition);
-        },
-
-
-
-
-
-        /***********************************************************************
-         * Main test
-         **********************************************************************/
-
-        runTemplateTest : function() {
-            this.sequencer.run({
-                onend: {
-                    fn: 'end',
-                    scope: this
-                },
-
-                tasks: [
-                    {
-                        name : 'Navigation',
-                        children : [
-                            {
-                                name: 'Navigation in input field',
-                                children: [
-                                    {
-                                        name: 'Focus input field',
-                                        method: '__focusInputField'
-                                    },
-                                    {
-                                        name: 'Left navigation in input field',
-                                        children: '_testLeftNavigationInInputField'
-                                    }
-                                ]
-                            },
-                            {
-                                name: 'Navigation in highlighted mode',
-                                children: [
-                                    {
-                                        name: 'Left navigation in highlighted mode',
-                                        children: '_testLeftNavigationInHighlightedMode'
-                                    },
-                                    {
-                                        name: 'Right navigation in highlighted mode',
-                                        children: '_testRightNavigationInHighlightedMode'
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    // ---------------------------------------------------------
-                    {
-                        name : 'Tab behavior',
-                        children : [
-                            {
-                                name: 'Tab behavior in highlighted mode',
-                                children: '_testTabBehaviorInHighlightedMode'
-                            },
-                            {
-                                name: 'Tab behavior in input field',
-                                children: '_testTabBehaviorInInputField'
-                            }
-                        ]
-                    }
-                ]
-            });
-        },
-
-
-
-
-
-        /***********************************************************************
-         * Navigation
-         **********************************************************************/
-
-        // Input field ---------------------------------------------------------
-
-        // ---------------------------------------------------------------- Left
-        _testLeftNavigationInInputField : [
-                {
-                    name: 'Insert text to be in a usual use case (this text has some matches)',
-                    method: '__insertText',
-                    args: ['a']
-                },
-                // Left in text and no selected option -------------------------
-                {
-                    name: 'Navigate left from within the text when there is no selected option',
-                    method: '__pressLeftArrow'
-                },
-                {
-                    name: 'Check caret went back to 0',
-                    method: '__checkCaretAndFocus',
-                    args: [0],
-                    asynchronous: false
-                },
-                // Left on the edge and no selected option ---------------------
-                {
-                    name: 'Navigate left from the left edge of the input, without any selected option',
-                    method: '__pressLeftArrow'
-                },
-                {
-                    name: 'Check caret remained at position 0',
-                    method: '__checkCaretAndFocus',
-                    args: [0],
-                    asynchronous: false
-                },
-                // Insert options & go back to right
-                {
-                    name: 'Insert two options',
-                    method: '__selectSuggestions',
-                    args: [['a', 'a']]
-                },
-                {
-                    name: 'Navigate right to be within the text again',
-                    method: '__pressRightArrow'
-                },
-                // Left in text and selected options present -------------------
-                {
-                    name: 'Navigate left from within the text when there are selected options',
-                    method: '__pressLeftArrow'
-                },
-                {
-                    name: 'Check caret went back to 0',
-                    method: '__checkCaretAndFocus',
-                    args: [0],
-                    asynchronous: false
-                },
-                // Left on the edge and selected options present ---------------
-                {
-                    name: 'Navigate left from the left edge of the input, now that there are options to highlight',
-                    method: '__pressLeftArrow'
-                },
-                {
-                    name: 'Check that the index of the highlighted option is corresponding to the one that was the last',
-                    method: '__checkHighlightedOption',
-                    args: [2],
-                    asynchronous: false
-                },
-                {
-                    name: 'Also check that in free text mode the current text is added',
-                    method: '__checkInsertedOptionsCount',
-                    args: [3],
-                    asynchronous: false
-                }
-        ],
-
-        // Highlighted mode ----------------------------------------------------
-
-        // ---------------------------------------------------------------- Left
-        _testLeftNavigationInHighlightedMode : [
-            {
-                name: 'Navigate left while in highlighted mode',
-                method: '__pressLeftArrow'
-            },
-            {
-                name: 'Check that the previous option has been highlighted (exclusively)',
-                method: '__checkHighlightedOption',
-                args: [1],
-                asynchronous: false
-            },
-            {
-                name: 'Navigate left while on the left edge of the selected options container',
-                method: '__pressLeftArrow'
-            },
-            {
-                name: 'Check that nothing changed',
-                method: '__checkHighlightedOption',
-                args: [1],
-                asynchronous: false
-            }
-        ],
-
-        // --------------------------------------------------------------- Right
-        _testRightNavigationInHighlightedMode : function() {
-            return [
-                {
-                    name: 'Navigate right while in highlighted mode',
-                    method: '__pressRightArrow'
-                },
-                {
-                    name: 'Check that the next option has been highlighted (exclusively)',
-                    method: '__checkHighlightedOption',
-                    args: [2],
-                    asynchronous: false
-                },
-                {
-                    name: 'Navigate right beyond the right edge of the list of selected options',
-                    method: '__pressRightArrow',
-                    args: [2]
-                },
-                {
-                    name: 'Check that the highlighted mode is off',
-                    method: '__shouldBeInHighlightedMode',
-                    args: [false],
-                    asynchronous: false
-                },
-                {
-                    name: 'Also check that the input field has focus and the caret is at its beginning',
-                    method: '__checkCaretAndFocus',
-                    args: [0],
-                    asynchronous: false
-                }
-            ];
-        },
-
-
-
-
-
-        /***********************************************************************
-         * Tab behavior
-         **********************************************************************/
-
-        // Highlighted mode ----------------------------------------------------
-
-        _testTabBehaviorInHighlightedMode : function() {
-            return [
-                {
-                    name: 'Go back to highlighted mode, with one of the first options highlighted',
-                    method: '__pressLeftArrow',
-                    args: [2]
-                },
-                {
-                    name: 'Check that input field does not have focus anymore',
-                    method: '__shouldInputFieldBeFocused',
-                    args: [false],
-                    asynchronous: false
-                },
-                {
-                    name: 'Press tab while in highlighted mode',
-                    method: '__pressTab'
-                },
-                {
-                    name: 'Check focus went back to the input field',
-                    method: '__shouldInputFieldBeFocused',
-                    args: [true],
-                    asynchronous: false
-                }
-            ];
-        },
-
-        // Input field ---------------------------------------------------------
-
-        _testTabBehaviorInInputField : function(task) {
-            return [
-                {
-                    name: 'Press tab while in input field',
-                    method: '__pressTab'
-                },
-                {
-                    name: 'Check that input field lost focus',
-                    method: '__shouldInputFieldBeFocused',
-                    args: [false],
-                    asynchronous: false
-                }
-            ];
         }
     }
 });
