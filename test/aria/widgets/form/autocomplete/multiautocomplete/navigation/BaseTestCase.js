@@ -38,7 +38,7 @@ Aria.classDefinition({
 
         // Configuration -------------------------------------------------------
 
-        this.defaultDelay = 200;
+        this.defaultDelay = 300;
         this.enableTracing = false;
 
         // Main sequence -------------------------------------------------------

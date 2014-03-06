@@ -28,14 +28,9 @@ Aria.classDefinition({
                 method: 'focusInputField'
             },
             {
-                name: 'Insert text to be in a usual use case (this text has some matches)',
-                method: 'insertText',
-                args: ['a']
-            },
-            {
                 name: 'Insert options',
                 method: 'selectSuggestions',
-                args: [['a']]
+                args: [['a', 'a']]
             },
             {
                 name: 'Select first option with navigation',
