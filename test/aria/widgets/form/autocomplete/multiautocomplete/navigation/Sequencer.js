@@ -40,7 +40,9 @@ Aria.classDefinition({
         "aria.utils.Array",
 
         "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Sequence",
-        "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Task"
+        "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Task",
+
+        "test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Helpers"
     ],
 
     /**
@@ -56,6 +58,7 @@ Aria.classDefinition({
      * @param[in] defaults {Object} Default properties. See full description for more information.
      */
     $constructor: function(defaults) {
+        this.HELPERS = test.aria.widgets.form.autocomplete.multiautocomplete.navigation.Helpers;
         this.__methods = {};
 
         // defaults ------------------------------------------------------------
@@ -267,7 +270,7 @@ Aria.classDefinition({
 
             var args = spec.args;
 
-            // ---------------------------------------------------------- fn (1)
+            // -------------------------------------- fn (registered properties)
 
             var fn = spec.fn;
 
@@ -275,13 +278,13 @@ Aria.classDefinition({
                 fn = spec.method;
             }
 
-            var registered;
+            var registeredProperties;
             if (aria.utils.Type.isString(fn)) {
-                registered = this.__methods[fn];
+                registeredProperties = this.__methods[fn];
             }
 
-            if (registered == null) {
-                registered = {};
+            if (registeredProperties == null) {
+                registeredProperties = {};
             }
 
             // ----------------------------------------------------------- scope
@@ -289,17 +292,13 @@ Aria.classDefinition({
             var scope = spec.scope;
 
             if (scope == null) {
-                scope = registered.scope;
+                scope = registeredProperties.scope;
             }
             if (scope == null) {
                 scope = this.scope;
             }
 
-            // ---------------------------------------------------------- fn (2)
-
-            if (fn == null) {
-                fn = registered.fn;
-            }
+            // -------------------------------------------- fn (actual callback)
 
             if (aria.utils.Type.isString(fn)) {
                 fn = scope[fn];
@@ -315,7 +314,7 @@ Aria.classDefinition({
             var asynchronous = spec.asynchronous;
 
             if (asynchronous == null) {
-                asynchronous = registered.asynchronous;
+                asynchronous = registeredProperties.asynchronous;
             }
 
             if (asynchronous == null) {
@@ -334,21 +333,19 @@ Aria.classDefinition({
             };
         },
 
-        registerMethod : function(spec) {
-            var name = spec.name;
-            var asynchronous = spec.asynchronous;
-            var scope = spec.scope;
+        registerMethodsProperties : function(specs) {
+            specs = this.HELPERS.arrayFactory(specs);
 
-            this.__methods[name] = {
-                fn: name,
-                asynchronous: asynchronous,
-                scope: scope
-            };
-        },
-
-        registerMethods : function(specs) {
             aria.utils.Array.forEach(specs, function(spec) {
-                this.registerMethod(spec);
+                var name = spec.name;
+                var asynchronous = spec.asynchronous;
+                var scope = spec.scope;
+
+                this.__methods[name] = {
+                    fn: name,
+                    asynchronous: asynchronous,
+                    scope: scope
+                };
             }, this);
         }
     }

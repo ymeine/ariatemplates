@@ -69,12 +69,14 @@ Aria.classDefinition({
             'shouldInputFieldBeFocused'
         ]
 
-        aria.utils.Array.forEach(synchronousMethods, function(name) {
-            this.sequencer.registerMethod({
+        synchronousMethods = this.HELPERS.map(synchronousMethods, function(name) {
+            return {
                 name: name,
                 asynchronous: false
-            });
-        }, this);
+            };
+        });
+
+        this.sequencer.registerMethodsProperties(synchronousMethods);
     },
 
     $prototype : {
