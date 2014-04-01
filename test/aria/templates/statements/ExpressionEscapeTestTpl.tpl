@@ -19,72 +19,157 @@
 
 {macro main()}
 
-<div {id "default"/}>
+
+
+/*******************************************************************************
+ * Automatic escaping
+ ******************************************************************************/
+
+<div {id "automatic"/}>
     ${"<div class='output' style=\"color:blue\">&amp;</div>"}
 </div>
 
-<div {id "implicit"/}>
+
+
+/*******************************************************************************
+ * Explicit final escaping
+ ******************************************************************************/
+
+// ------------------------------------------------------------------ Escape all
+
+<div {id "all-implicit"/}>
     ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeForHTML}
 </div>
 
 <div {id "all-boolean"/}>
     ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeforHTML:true}
 </div>
+
 <div {id "all-object"/}>
     ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeForhtml:{text: true, attr: true}}
 </div>
 
+// -------------------------------------------------------------- Escape nothing
+
 <div {id "nothing-boolean"/}>
     ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeForHtml:false}
 </div>
+
 <div {id "nothing-object"/}>
     ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeforHtml:{text: false, attr: false}}
 </div>
 
+// ------------------------------------------------ Escape for specific contexts
+
 <div {id "attr"/}>
     ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeforhtml:{attr: true}}
 </div>
+
 <div {id "text"/}>
     ${"<div class='output' style=\"color:blue\">&amp;</div>"|ESCAPEFORHTML:{text: true}}
 </div>
 
 
-<div {id "special-attr"/}>
+<div {id "attr-special"/}>
     <div data-quot="${'"quot"'|escapeForHTML:{attr:true}}" data-apos='${"'apos'"|escapeForHTML:{attr:true}}'></div>
 </div>
 
 
-<div {id "default-modifier-default"/}>
+
+/*******************************************************************************
+ * Other modifiers behavior
+ ******************************************************************************/
+
+// --------------------------------------------------------------------- default
+
+<div {id "automatic-modifier_default"/}>
     ${undefined|default:'<div></div>'}
 </div>
-<div {id "nothing-modifier-default-before"/}>
+
+<div {id "nothing-modifier_default-before"/}>
     ${undefined|escapeForHTML:false|default:'<div></div>'}
 </div>
-<div {id "nothing-modifier-default-after"/}>
+
+<div {id "nothing-modifier_default-after"/}>
     ${undefined|default:'<div></div>'|escapeForHTML:false}
 </div>
-<div {id "all-modifier-default-before"/}>
+
+<div {id "all-modifier_default-before"/}>
     ${undefined|escapeForHTML:true|default:'<div></div>'}
 </div>
-<div {id "all-modifier-default-after"/}>
+
+<div {id "all-modifier_default-after"/}>
     ${undefined|default:'<div></div>'|escapeForHTML:true}
 </div>
 
-<div {id "default-modifier-empty"/}>
+// ----------------------------------------------------------------------- empty
+
+<div {id "automatic-modifier_empty"/}>
     ${''|empty:'<div></div>'}
 </div>
-<div {id "nothing-modifier-empty-before"/}>
+
+<div {id "nothing-modifier_empty-before"/}>
     ${''|escapeForHTML:false|empty:'<div></div>'}
 </div>
-<div {id "nothing-modifier-empty-after"/}>
+
+<div {id "nothing-modifier_empty-after"/}>
     ${''|empty:'<div></div>'|escapeForHTML:false}
 </div>
-<div {id "all-modifier-empty-before"/}>
+
+<div {id "all-modifier_empty-before"/}>
     ${''|escapeForHTML:true|empty:'<div></div>'}
 </div>
-<div {id "all-modifier-empty-after"/}>
+
+<div {id "all-modifier_empty-after"/}>
     ${''|empty:'<div></div>'|escapeForHTML:true}
 </div>
+
+// ------------------------------------------------------------------- highlight
+
+<div {id "automatic-modifier_highlight"/}>
+    ${'start-middle-end'|highlight:'middle'}
+</div>
+
+<div {id "nothing-modifier_highlight-before"/}>
+    ${'start-middle-end'|escapeForHTML:false|highlight:'middle'}
+</div>
+
+<div {id "nothing-modifier_highlight-after"/}>
+    ${'start-middle-end'|highlight:'middle'|escapeForHTML:false}
+</div>
+
+<div {id "all-modifier_highlight-before"/}>
+    ${'start-middle-end'|escapeForHTML:true|highlight:'middle'}
+</div>
+
+<div {id "all-modifier_highlight-after"/}>
+    ${'start-middle-end'|highlight:'middle'|escapeForHTML:true}
+</div>
+
+// ------------------------------------------------------------------ dateformat
+
+<div {id "automatic-modifier_dateformat"/}>
+    ${this.DATE|dateformat:this.DATE_FORMAT}
+</div>
+
+<div {id "nothing-modifier_dateformat-before"/}>
+    ${this.DATE|escapeForHTML:false|dateformat:this.DATE_FORMAT}
+</div>
+
+<div {id "nothing-modifier_dateformat-after"/}>
+    ${this.DATE|dateformat:this.DATE_FORMAT|escapeForHTML:false}
+</div>
+
+// This one should fail
+// <div {id "all-modifier_dateformat-before"/}>
+//     ${this.DATE|escapeForHTML:true|dateformat:this.DATE_FORMAT}
+// </div>
+// ----
+
+<div {id "all-modifier_dateformat-after"/}>
+    ${this.DATE|dateformat:this.DATE_FORMAT|escapeForHTML:true}
+</div>
+
 
 {/macro}
 
