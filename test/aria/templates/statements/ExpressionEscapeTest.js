@@ -21,17 +21,15 @@ function UseCase(spec) {
     // ------------------------------------------------------------------- input
 
     var input = spec.input;
-    if (input == null) {
-        input = "";
-    }
     this.input = input;
 
     // ------------------------------------------------------------- output text
 
     var outputText = spec.outputText;
     if (outputText == null) {
-        outputText = "";
+        outputText = input;
     }
+    outputText = "" + outputText;
     this.outputText = outputText;
 
     // --------------------------------------------------------- number of nodes
@@ -55,9 +53,183 @@ Aria.classDefinition({
     $extends: "aria.jsunit.TemplateTestCase",
     $dependencies: ["aria.utils.Dom", "aria.utils.String", "aria.utils.Date", "aria.utils.Type"],
 
-    $statics: {
-        DATE: __date,
-        DATE_FORMAT: __dateformat,
+    $constructor : function() {
+        this.$TemplateTestCase.constructor.call(this);
+
+        // ---------------------------------------------------------------------
+
+        this.date = new Date();
+        this.dateformat = "dd MMMM yyyy";
+
+        var formattedDate = aria.utils.Date.format(this.date, this.dateformat);
+
+        // Please refer to the associated template to understand the following
+        // The keys of the object correspond to the ids of the "div"s encapsulating each tested use case
+        // By looking at the template, you will know what the use case is about (the id gives a hint about it too). You will also see what is the input and when the escaping is expected to be done.
+        // Below, you will see for each of these cases what is the expected content in the resulting HTML Text Node (inside the div), as well as the number of possibly other generated HTML nodes.
+
+        var useCasesSpecs = {
+            'automatic': "<div class='output' style=\"color:blue\">&amp;</div>",
+
+            // -----------------------------------------------------------------
+
+            'all-implicit': "<div class='output' style=\"color:blue\">&amp;</div>",
+
+            'all-boolean' : "<div class='output' style=\"color:blue\">&amp;</div>",
+            'all-object'  : "<div class='output' style=\"color:blue\">&amp;</div>",
+
+            // -----------------------------------------------------------------
+
+            'nothing-boolean': {
+                input: "<div class='output' style=\"color:blue\">&amp;</div>",
+                outputText: "&",
+                outputNodesNumber: 1
+
+            },
+            'nothing-object': {
+                input: "<div class='output' style=\"color:blue\">&amp;</div>",
+                outputText: "&",
+                outputNodesNumber: 1
+            },
+
+            // -----------------------------------------------------------------
+
+            'attr': {
+                input: "<div class='output' style=\"color:blue\">&amp;</div>",
+                outputText: "&",
+                outputNodesNumber: 1
+            },
+            'text': "<div class='output' style=\"color:blue\">&amp;</div>",
+
+            'attr-special': {
+                outputText: "",
+                outputNodesNumber: 1,
+                attributes: {
+                    'data-quot': '"quot"',
+                    'data-apos': "'apos'"
+                }
+            },
+
+            // -----------------------------------------------------------------
+
+            'automatic-modifier_default': {
+                input: undefined,
+                outputText: "<div></div>"
+            },
+
+            'nothing-modifier_default-before': {
+                input: undefined,
+                outputText: "<div></div>",
+            },
+            'all-modifier_default-before': {
+                input: undefined,
+                outputText: "<div></div>",
+            },
+
+            'all-modifier_default-after': {
+                input: undefined,
+                outputText: "<div></div>",
+            },
+
+
+            'nothing-modifier_default-after': {
+                outputText: "",
+                outputNodesNumber: 1
+            },
+
+            // -----------------------------------------------------------------
+
+            'automatic-modifier_empty': {
+                input: '',
+                outputText: "<div></div>"
+            },
+
+            'nothing-modifier_empty-before': {
+                input: '',
+                outputText: "<div></div>"
+            },
+            'all-modifier_empty-before': {
+                input: '',
+                outputText: "<div></div>"
+            },
+
+            'all-modifier_empty-after': {
+                input: '',
+                outputText: "<div></div>"
+            },
+
+            'nothing-modifier_empty-after': {
+                input: '',
+                outputNodesNumber: 1
+            },
+
+            // -----------------------------------------------------------------
+
+            'automatic-modifier_highlight': {
+                input: 'start-middle-end',
+                outputText: "start-<strong>middle</strong>-end"
+            },
+
+            'nothing-modifier_highlight-before': {
+                input: 'start-middle-end',
+                outputText: "start-<strong>middle</strong>-end"
+            },
+
+            'all-modifier_highlight-before': {
+                input: 'start-middle-end',
+                outputText: "start-<strong>middle</strong>-end"
+            },
+            'all-modifier_highlight-after': {
+                input: 'start-middle-end',
+                outputText: "start-<strong>middle</strong>-end"
+            },
+
+            'nothing-modifier_highlight-after': {
+                input: "start-middle-end",
+                outputNodesNumber: 1
+            },
+
+            // -----------------------------------------------------------------
+
+            'automatic-modifier_dateformat': {
+                input: this.date,
+                outputText: formattedDate
+            },
+            'nothing-modifier_dateformat-before': {
+                input: this.date,
+                outputText: formattedDate
+            },
+            'nothing-modifier_dateformat-after': {
+                input: this.date,
+                outputText: formattedDate
+            },
+            // This one should fail
+            //'all-modifier_dateformat-before'
+            // ----
+            'all-modifier_dateformat-after': {
+                input: this.date,
+                outputText: formattedDate
+            }
+        };
+
+
+
+        this.useCases = [];
+        this.useCasesMap = {};
+        this.inputsMap = {};
+
+        this.__forOwn(useCasesSpecs, function(id, spec) {
+            this.addUseCase(this.buildUseCase(id, spec));
+        });
+
+        this.setTestEnv({
+            data: {
+                useCases: this.useCasesMap,
+                inputs: this.inputsMap,
+                dateformat: this.dateformat,
+                date: this.date
+            }
+        });
     },
 
     $prototype: {
@@ -65,137 +237,22 @@ Aria.classDefinition({
          * Use cases
          **********************************************************************/
 
-        $dataReady : function() {
-            var __date = new Date();
-            var __dateformat = "dd MMMM yyyy";
+        buildUseCase : function(id, spec) {
+            if (aria.utils.Type.isString(spec)) {
+                spec = {
+                    input: spec
+                };
+            }
 
-            // Please refer to the associated template to understand the following
-            // The keys of the object correspond to the ids of the "div"s encapsulating each tested use case
-            // By looking at the template, you will know what the use case is about (the id gives a hint about it too). You will also see what is the input and when the escaping is expected to be done.
-            // Below, you will see for each of these cases what is the expected content in the resulting HTML Text Node (inside the div), as well as the number of possibly other generated HTML nodes.
+            spec.id = id;
 
-            var useCasesSpecs = {
-                'automatic': "<div class='output' style=\"color:blue\">&amp;</div>",
+            return new UseCase(spec);
+        },
 
-                // -----------------------------------------------------------------
-
-                'all-implicit': "<div class='output' style=\"color:blue\">&amp;</div>",
-
-                'all-boolean' : "<div class='output' style=\"color:blue\">&amp;</div>",
-                'all-object'  : "<div class='output' style=\"color:blue\">&amp;</div>",
-
-                // -----------------------------------------------------------------
-
-                'nothing-boolean': {
-                    outputText: "&",
-                    outputNodesNumber: 1
-
-                },
-                'nothing-object': {
-                    outputText: "&",
-                    outputNodesNumber: 1
-                },
-
-                // -----------------------------------------------------------------
-
-                'attr': {
-                    outputText: "&",
-                    outputNodesNumber: 1
-                },
-                'text': "<div class='output' style=\"color:blue\">&amp;</div>",
-
-                'attr-special': {
-                    outputText: "",
-                    outputNodesNumber: 1,
-                    attributes: {
-                        'data-quot': '"quot"',
-                        'data-apos': "'apos'"
-                    }
-                },
-
-                // -----------------------------------------------------------------
-
-                'automatic-modifier_default': "<div></div>",
-
-                'nothing-modifier_default-before': {
-                    outputText: "",
-                    outputNodesNumber: 1
-                },
-
-                'nothing-modifier_default-after': {
-                    outputText: "",
-                    outputNodesNumber: 1
-                },
-
-                'all-modifier_default-before': {
-                    outputText: "",
-                    outputNodesNumber: 1
-                },
-
-                'all-modifier_default-after': "<div></div>",
-
-                // -----------------------------------------------------------------
-
-                'automatic-modifier_empty': "<div></div>",
-
-                'nothing-modifier_empty-before': {
-                    outputText: "",
-                    outputNodesNumber: 1
-                },
-
-                'nothing-modifier_empty-after': {
-                    outputText: "",
-                    outputNodesNumber: 1
-                },
-
-                'all-modifier_empty-before': {
-                    outputText: "",
-                    outputNodesNumber: 1
-                },
-
-                'all-modifier_empty-after': "<div></div>",
-
-                // -----------------------------------------------------------------
-
-                'automatic-modifier_highlight': "start-<strong>middle</strong>-end",
-
-                'nothing-modifier_highlight-before': "start-<strong>middle</strong>-end",
-
-                'all-modifier_highlight-before': "start-<strong>middle</strong>-end",
-                'all-modifier_highlight-after': "start-<strong>middle</strong>-end",
-
-                'nothing-modifier_highlight-after': {
-                    outputText: "start-middle-end",
-                    outputNodesNumber: 1
-                },
-
-                // -----------------------------------------------------------------
-
-                'automatic-modifier_dateformat'     : aria.utils.Date.format(__date, __dateformat),
-                'nothing-modifier_dateformat-before': aria.utils.Date.format(__date, __dateformat),
-                'nothing-modifier_dateformat-after' : aria.utils.Date.format(__date, __dateformat),
-                // This one should fail
-                //'all-modifier_dateformat-before'    : ,
-                // ----
-                'all-modifier_dateformat-after'     : aria.utils.Date.format(__date, __dateformat)
-            };
-
-
-
-            var useCases = [];
-            this.__forOwn(useCasesSpecs, function(id, spec) {
-                if (aria.utils.Type.isString(spec)) {
-                    spec = {
-                        outputText: spec
-                    }
-                }
-
-                spec.id = id;
-
-                useCases.push(UseCase(spec));
-            });
-
-            this.data.USE_CASES = [];
+        addUseCase : function(useCase) {
+            this.useCases.push(useCase);
+            this.useCasesMap[useCase.id] = useCase;
+            this.inputsMap[useCase.id] = useCase.input;
         },
 
         /***********************************************************************
@@ -203,14 +260,13 @@ Aria.classDefinition({
          **********************************************************************/
 
         runTemplateTest: function() {
-            this.__forOwn(this.USE_CASES, this.__testUseCase);
+            this.__forEach(this.useCases, this.__testUseCase);
 
             this.end();
         },
 
-        __testUseCase: function(domId, useCase) {
-            // Expected results ------------------------------------------------
-
+        __testUseCase: function(index, useCase) {
+            var domId = useCase.id;
             var expectedText = useCase.outputText;
             var expectedNumberOfNodes = useCase.outputNodesNumber;
             var attributes = useCase.attributes;

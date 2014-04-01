@@ -26,7 +26,7 @@
  ******************************************************************************/
 
 <div {id "automatic"/}>
-    ${"<div class='output' style=\"color:blue\">&amp;</div>"}
+    ${data.inputs["automatic"]}
 </div>
 
 
@@ -38,35 +38,35 @@
 // ------------------------------------------------------------------ Escape all
 
 <div {id "all-implicit"/}>
-    ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeForHTML}
+    ${data.inputs["all-implicit"]|escapeForHTML}
 </div>
 
 <div {id "all-boolean"/}>
-    ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeforHTML:true}
+    ${data.inputs["all-boolean"]|escapeforHTML:true}
 </div>
 
 <div {id "all-object"/}>
-    ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeForhtml:{text: true, attr: true}}
+    ${data.inputs["all-object"]|escapeForhtml:{text: true, attr: true}}
 </div>
 
 // -------------------------------------------------------------- Escape nothing
 
 <div {id "nothing-boolean"/}>
-    ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeForHtml:false}
+    ${data.inputs["nothing-boolean"]|escapeForHtml:false}
 </div>
 
 <div {id "nothing-object"/}>
-    ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeforHtml:{text: false, attr: false}}
+    ${data.inputs["nothing-object"]|escapeforHtml:{text: false, attr: false}}
 </div>
 
 // ------------------------------------------------ Escape for specific contexts
 
 <div {id "attr"/}>
-    ${"<div class='output' style=\"color:blue\">&amp;</div>"|escapeforhtml:{attr: true}}
+    ${data.inputs["attr"]|escapeforhtml:{attr: true}}
 </div>
 
 <div {id "text"/}>
-    ${"<div class='output' style=\"color:blue\">&amp;</div>"|ESCAPEFORHTML:{text: true}}
+    ${data.inputs["text"]|ESCAPEFORHTML:{text: true}}
 </div>
 
 
@@ -82,92 +82,102 @@
 
 // --------------------------------------------------------------------- default
 
-<div {id "automatic-modifier_default"/}>
-    ${undefined|default:'<div></div>'}
+{var id = "automatic-modifier_default" /}
+<div {id id /}>
+    {var useCase = data.useCases[id] /}
+    ${useCase.input|default:'<div></div>'}
 </div>
 
-<div {id "nothing-modifier_default-before"/}>
-    ${undefined|escapeForHTML:false|default:'<div></div>'}
+{var id = "nothing-modifier_default-before" /}
+<div {id id /}>
+    {var useCase = data.useCases[id] /}
+    ${useCase.input|escapeForHTML:false|default:'<div></div>'}
 </div>
 
-<div {id "nothing-modifier_default-after"/}>
-    ${undefined|default:'<div></div>'|escapeForHTML:false}
+{var id = "nothing-modifier_default-after" /}
+<div {id id /}>
+    {var useCase = data.useCases[id] /}
+    ${useCase.input|default:'<div></div>'|escapeForHTML:false}
 </div>
 
-<div {id "all-modifier_default-before"/}>
-    ${undefined|escapeForHTML:true|default:'<div></div>'}
+{var id = "all-modifier_default-before" /}
+<div {id id /}>
+    {var useCase = data.useCases[id] /}
+    ${useCase.input|escapeForHTML:true|default:'<div></div>'}
 </div>
 
-<div {id "all-modifier_default-after"/}>
-    ${undefined|default:'<div></div>'|escapeForHTML:true}
+{var id = "all-modifier_default-after" /}
+<div {id id /}>
+    {var useCase = data.useCases[id] /}
+    ${useCase.input|default:'<div></div>'|escapeForHTML:true}
 </div>
 
 // ----------------------------------------------------------------------- empty
 
 <div {id "automatic-modifier_empty"/}>
-    ${''|empty:'<div></div>'}
+    ${data.inputs["automatic-modifier_empty"]|empty:'<div></div>'}
 </div>
 
 <div {id "nothing-modifier_empty-before"/}>
-    ${''|escapeForHTML:false|empty:'<div></div>'}
+    ${data.inputs["nothing-modifier_empty-before"]|escapeForHTML:false|empty:'<div></div>'}
 </div>
 
 <div {id "nothing-modifier_empty-after"/}>
-    ${''|empty:'<div></div>'|escapeForHTML:false}
+    ${data.inputs["nothing-modifier_empty-after"]|empty:'<div></div>'|escapeForHTML:false}
 </div>
 
 <div {id "all-modifier_empty-before"/}>
-    ${''|escapeForHTML:true|empty:'<div></div>'}
+    ${data.inputs["all-modifier_empty-before"]|escapeForHTML:true|empty:'<div></div>'}
 </div>
 
 <div {id "all-modifier_empty-after"/}>
-    ${''|empty:'<div></div>'|escapeForHTML:true}
+    ${data.inputs["all-modifier_empty-after"]|empty:'<div></div>'|escapeForHTML:true}
 </div>
 
 // ------------------------------------------------------------------- highlight
 
 <div {id "automatic-modifier_highlight"/}>
-    ${'start-middle-end'|highlight:'middle'}
+    ${data.inputs["automatic-modifier_highlight"]|highlight:'middle'}
 </div>
 
 <div {id "nothing-modifier_highlight-before"/}>
-    ${'start-middle-end'|escapeForHTML:false|highlight:'middle'}
+    ${data.inputs["nothing-modifier_highlight-before"]|escapeForHTML:false|highlight:'middle'}
 </div>
 
 <div {id "nothing-modifier_highlight-after"/}>
-    ${'start-middle-end'|highlight:'middle'|escapeForHTML:false}
+    ${data.inputs["nothing-modifier_highlight-after"]|highlight:'middle'|escapeForHTML:false}
 </div>
 
 <div {id "all-modifier_highlight-before"/}>
-    ${'start-middle-end'|escapeForHTML:true|highlight:'middle'}
+    ${data.inputs["all-modifier_highlight-before"]|escapeForHTML:true|highlight:'middle'}
 </div>
 
 <div {id "all-modifier_highlight-after"/}>
-    ${'start-middle-end'|highlight:'middle'|escapeForHTML:true}
+    ${data.inputs["all-modifier_highlight-after"]|highlight:'middle'|escapeForHTML:true}
 </div>
 
 // ------------------------------------------------------------------ dateformat
 
 <div {id "automatic-modifier_dateformat"/}>
-    ${this.DATE|dateformat:this.DATE_FORMAT}
+    ${data.inputs["automatic-modifier_dateformat"]|dateformat:data.dateformat}
 </div>
 
 <div {id "nothing-modifier_dateformat-before"/}>
-    ${this.DATE|escapeForHTML:false|dateformat:this.DATE_FORMAT}
+    ${data.inputs["nothing-modifier_dateformat-before"]|escapeForHTML:false|dateformat:data.dateformat}
 </div>
 
 <div {id "nothing-modifier_dateformat-after"/}>
-    ${this.DATE|dateformat:this.DATE_FORMAT|escapeForHTML:false}
+    ${data.inputs["nothing-modifier_dateformat-after"]|dateformat:data.dateformat|escapeForHTML:false}
 </div>
 
 // This one should fail
 // <div {id "all-modifier_dateformat-before"/}>
-//     ${this.DATE|escapeForHTML:true|dateformat:this.DATE_FORMAT}
+//     ${data.inputs["all-modifier_dateformat-before"]|escapeForHTML:true|dateformat:data.dateformat}
 // </div>
 // ----
 
 <div {id "all-modifier_dateformat-after"/}>
-    ${this.DATE|dateformat:this.DATE_FORMAT|escapeForHTML:true}
+    ${data.inputs["all-modifier_dateformat-after"]|dateformat:data.dateformat|escapeForHTML:true}
 </div>
 
 
