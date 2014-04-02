@@ -13,52 +13,6 @@
  * limitations under the License.
  */
 
-function UseCase(spec) {
-    // ---------------------------------------------------------------------- id
-
-    this.id = spec.id;
-
-    // ------------------------------------------------------------------- input
-
-    var input = spec.input;
-    this.input = input;
-
-    // ------------------------------------------------------------------ escape
-
-    var escape = spec.escape;
-    this.escape = escape;
-
-    // --------------------------------------------------------------- modifiers
-
-    var modifiers = spec.modifiers;
-    if (modifiers == null) {
-        modifiers = {};
-    }
-    this.modifiers = modifiers;
-
-    // ------------------------------------------------------------- output text
-
-    var outputText = spec.outputText;
-    if (outputText == null) {
-        outputText = input;
-    }
-    outputText = "" + outputText;
-    this.outputText = outputText;
-
-    // --------------------------------------------------------- number of nodes
-
-    var outputNodesNumber = spec.outputNodesNumber;
-    if (outputNodesNumber == null) {
-        outputNodesNumber = 0;
-    }
-    this.outputNodesNumber = outputNodesNumber;
-
-    // -------------------------------------------------------------- attributes
-
-    var attributes = spec.attributes;
-    this.attributes = attributes;
-}
-
 
 
 Aria.classDefinition({
@@ -350,13 +304,59 @@ Aria.classDefinition({
 
             spec.id = id;
 
-            return new UseCase(spec);
+            return new this.UseCase(spec);
         },
 
         addUseCase : function(useCase) {
             this.useCases.push(useCase);
             this.useCasesMap[useCase.id] = useCase;
             this.inputsMap[useCase.id] = useCase.input;
+        },
+
+        UseCase: function(spec) {
+            // -------------------------------------------------------------- id
+
+            this.id = spec.id;
+
+            // ----------------------------------------------------------- input
+
+            var input = spec.input;
+            this.input = input;
+
+            // ---------------------------------------------------------- escape
+
+            var escape = spec.escape;
+            this.escape = escape;
+
+            // ------------------------------------------------------- modifiers
+
+            var modifiers = spec.modifiers;
+            if (modifiers == null) {
+                modifiers = {};
+            }
+            this.modifiers = modifiers;
+
+            // ----------------------------------------------------- output text
+
+            var outputText = spec.outputText;
+            if (outputText == null) {
+                outputText = input;
+            }
+            outputText = "" + outputText;
+            this.outputText = outputText;
+
+            // ------------------------------------------------- number of nodes
+
+            var outputNodesNumber = spec.outputNodesNumber;
+            if (outputNodesNumber == null) {
+                outputNodesNumber = 0;
+            }
+            this.outputNodesNumber = outputNodesNumber;
+
+            // ------------------------------------------------------ attributes
+
+            var attributes = spec.attributes;
+            this.attributes = attributes;
         },
 
         /***********************************************************************
