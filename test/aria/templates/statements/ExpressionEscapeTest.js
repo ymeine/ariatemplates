@@ -23,6 +23,19 @@ function UseCase(spec) {
     var input = spec.input;
     this.input = input;
 
+    // ------------------------------------------------------------------ escape
+
+    var escape = spec.escape;
+    this.escape = escape;
+
+    // --------------------------------------------------------------- modifiers
+
+    var modifiers = spec.modifiers;
+    if (modifiers == null) {
+        modifiers = {};
+    }
+    this.modifiers = modifiers;
+
     // ------------------------------------------------------------- output text
 
     var outputText = spec.outputText;
@@ -75,19 +88,28 @@ Aria.classDefinition({
 
             'all-implicit': "<div class='output' style=\"color:blue\">&amp;</div>",
 
-            'all-boolean' : "<div class='output' style=\"color:blue\">&amp;</div>",
-            'all-object'  : "<div class='output' style=\"color:blue\">&amp;</div>",
+            'all-boolean': {
+                input: "<div class='output' style=\"color:blue\">&amp;</div>",
+                escape: true
+            },
+
+            'all-object': {
+                input: "<div class='output' style=\"color:blue\">&amp;</div>",
+                escape: {text: true, attr: true}
+            },
 
             // -----------------------------------------------------------------
 
             'nothing-boolean': {
                 input: "<div class='output' style=\"color:blue\">&amp;</div>",
+                escape: false,
                 outputText: "&",
                 outputNodesNumber: 1
 
             },
             'nothing-object': {
                 input: "<div class='output' style=\"color:blue\">&amp;</div>",
+                escape: {text: false, attr: false},
                 outputText: "&",
                 outputNodesNumber: 1
             },
@@ -96,12 +118,14 @@ Aria.classDefinition({
 
             'attr': {
                 input: "<div class='output' style=\"color:blue\">&amp;</div>",
+                escape: {attr: true},
                 outputText: "&",
                 outputNodesNumber: 1
             },
             'text': "<div class='output' style=\"color:blue\">&amp;</div>",
 
             'attr-special': {
+                escape: {attr:true},
                 outputText: "",
                 outputNodesNumber: 1,
                 attributes: {
@@ -110,104 +134,184 @@ Aria.classDefinition({
                 }
             },
 
-            // -----------------------------------------------------------------
+            // ----------------------------------------------- modifier: default
 
             'automatic-modifier_default': {
                 input: undefined,
+                modifiers: {
+                    'default': ["<div></div>"]
+                },
                 outputText: "<div></div>"
             },
 
             'nothing-modifier_default-before': {
                 input: undefined,
-                outputText: "<div></div>",
+                escape: false,
+                modifiers: {
+                    'default': ["<div></div>"]
+                },
+                outputText: "<div></div>"
             },
             'all-modifier_default-before': {
                 input: undefined,
-                outputText: "<div></div>",
+                escape: true,
+                modifiers: {
+                    'default': ["<div></div>"]
+                },
+                outputText: "<div></div>"
             },
 
             'all-modifier_default-after': {
                 input: undefined,
-                outputText: "<div></div>",
+                escape: true,
+                modifiers: {
+                    'default': ["<div></div>"]
+                },
+                outputText: "<div></div>"
             },
 
 
             'nothing-modifier_default-after': {
+                input: undefined,
+                escape: false,
+                modifiers: {
+                    'default': ["<div></div>"]
+                },
                 outputText: "",
                 outputNodesNumber: 1
             },
 
-            // -----------------------------------------------------------------
+            // ------------------------------------------------- modifier: empty
 
             'automatic-modifier_empty': {
                 input: '',
+                modifiers: {
+                    empty: ['<div></div>']
+                },
                 outputText: "<div></div>"
             },
 
             'nothing-modifier_empty-before': {
                 input: '',
+                escape: false,
+                modifiers: {
+                    empty: ['<div></div>']
+                },
                 outputText: "<div></div>"
             },
             'all-modifier_empty-before': {
                 input: '',
+                escape: true,
+                modifiers: {
+                    empty: ['<div></div>']
+                },
                 outputText: "<div></div>"
             },
 
             'all-modifier_empty-after': {
                 input: '',
+                escape: true,
+                modifiers: {
+                    empty: ['<div></div>']
+                },
                 outputText: "<div></div>"
             },
 
             'nothing-modifier_empty-after': {
                 input: '',
+                escape: false,
+                modifiers: {
+                    empty: ['<div></div>']
+                },
                 outputNodesNumber: 1
             },
 
-            // -----------------------------------------------------------------
+            // --------------------------------------------- modifier: highlight
 
             'automatic-modifier_highlight': {
                 input: 'start-middle-end',
+                modifiers: {
+                    highlight: ['middle']
+                },
                 outputText: "start-<strong>middle</strong>-end"
             },
 
             'nothing-modifier_highlight-before': {
                 input: 'start-middle-end',
+                escape: false,
+                modifiers: {
+                    highlight: ['middle']
+                },
                 outputText: "start-<strong>middle</strong>-end"
             },
 
             'all-modifier_highlight-before': {
                 input: 'start-middle-end',
+                escape: true,
+                modifiers: {
+                    highlight: ['middle']
+                },
                 outputText: "start-<strong>middle</strong>-end"
             },
             'all-modifier_highlight-after': {
                 input: 'start-middle-end',
+                escape: true,
+                modifiers: {
+                    highlight: ['middle']
+                },
                 outputText: "start-<strong>middle</strong>-end"
             },
 
             'nothing-modifier_highlight-after': {
-                input: "start-middle-end",
+                input: 'start-middle-end',
+                escape: false,
+                modifiers: {
+                    highlight: ['middle']
+                },
                 outputNodesNumber: 1
             },
 
-            // -----------------------------------------------------------------
+            // -------------------------------------------- modifier: dateformat
 
             'automatic-modifier_dateformat': {
                 input: this.date,
+                modifiers: {
+                    dateformat: [this.dateformat]
+                },
                 outputText: formattedDate
             },
             'nothing-modifier_dateformat-before': {
                 input: this.date,
+                escape: false,
+                modifiers: {
+                    dateformat: [this.dateformat]
+                },
                 outputText: formattedDate
             },
             'nothing-modifier_dateformat-after': {
                 input: this.date,
+                escape: false,
+                modifiers: {
+                    dateformat: [this.dateformat]
+                },
                 outputText: formattedDate
             },
             // This one should fail
-            //'all-modifier_dateformat-before'
+            // 'all-modifier_dateformat-before': {
+            //     input: this.date,
+            //     escape: true,
+            //     modifiers: {
+            //         dateformat: [this.dateformat]
+            //     },
+            //     outputText: formattedDate
+            // },
             // ----
             'all-modifier_dateformat-after': {
                 input: this.date,
+                escape: true,
+                modifiers: {
+                    dateformat: [this.dateformat]
+                },
                 outputText: formattedDate
             }
         };
