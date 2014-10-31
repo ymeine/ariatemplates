@@ -154,7 +154,7 @@ module.exports = Aria.classDefinition({
         },
 
         /**
-         * Checks if the widget value is undefined (only when widget is initialised) If it is then sets the value as the
+         * Checks if the widget value is undefined (only when widget is initialized) If it is then sets the value as the
          * first value in the select options If there is already a value set then checks the value set is a valid value
          * contained in the select options If it isn't then logs an error that the widget value is different from any
          * values in the widgets options.
@@ -253,8 +253,21 @@ module.exports = Aria.classDefinition({
          * @protected
          * @param {aria.DomEvent} event Mouse down event
          */
-        _dom_onmousedown : function (evt) {
+        // _dom_onmousedown : function (evt) {
+        //     var target = evt.target;
+        //     console.log("Select._dom_onmousedown");
+        //     console.log(target);
+        //     var inputDomElt = this._getInputMarkupDomElt();
+        //     if (this.controller && ariaUtilsDom.isAncestor(target, inputDomElt)) {
+        //         this._toggleDropdown();
+        //         evt.preventDefault(); // prevent the selection of the text when clicking
+        //     }
+        // },
+
+        _dom_ontouchend : function(evt) {
             var target = evt.target;
+            console.log("Select._dom_ontouchend");
+            console.log(target);
             var inputDomElt = this._getInputMarkupDomElt();
             if (this.controller && ariaUtilsDom.isAncestor(target, inputDomElt)) {
                 this._toggleDropdown();

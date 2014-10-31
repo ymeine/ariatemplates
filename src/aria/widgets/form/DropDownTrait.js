@@ -113,7 +113,7 @@ module.exports = Aria.classDefinition({
                 if (this._hasFocus) {
                     this._keepFocus = true;
                 }
-            } else if (evt.name == "iconClick" && evt.iconName == "dropdown" && !this._cfg.disabled) {
+            } else if (evt.name == "iconTouchEnd" && evt.iconName == "dropdown" && !this._cfg.disabled) {
                 this._toggleDropdown();
             }
         },

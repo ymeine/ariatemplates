@@ -355,6 +355,7 @@ module.exports = Aria.classDefinition({
             out.write(delegateManager.getMarkup(this._delegateId) + " ");
 
             out.write('class="' + cssClasses + '" ');
+            out.write('onclick="void(0)" '); // for iOS, see: https://developer.apple.com/library/IOS/documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html#//apple_ref/doc/uid/TP40006511-SW3
 
             out.write('style="');
             if (this._spanStyle != null) {

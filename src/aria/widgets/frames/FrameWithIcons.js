@@ -88,6 +88,12 @@ module.exports = Aria.classDefinition({
                 "iconName" : "Name of the icon."
             }
         },
+        "iconTouchEnd" : {
+            description : "Raised when an icon has finished being touched.",
+            properties : {
+                "iconName" : "Name of the icon."
+            }
+        },
         "iconMouseDown" : {
             description : "Raised when the mouse is pressed on an icon.",
             properties : {
@@ -176,6 +182,7 @@ module.exports = Aria.classDefinition({
          */
         eventMap : {
             "click" : "iconClick",
+            "touchend" : "iconTouchEnd",
             "mousedown" : "iconMouseDown",
             "mouseup" : "iconMouseDown",
             "blur" : "iconBlur",
