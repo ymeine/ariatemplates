@@ -55,7 +55,7 @@ module.exports = Aria.tplScriptDefinition({
             var idx = this.data.selectedIndex;
             if (idx != null && idx > -1) {
                 var wrapper = this.$getChild(this._refContainer, idx + this._itemShift);
-                wrapper.scrollIntoView();
+                //wrapper.scrollIntoView();
                 wrapper.$dispose();
             }
         },

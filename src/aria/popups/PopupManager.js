@@ -355,6 +355,9 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                 var domEvent = /** @type aria.DomEvent */
                 new ariaDomEvent(event), target = /** @type HTMLElement */
                 domEvent.target;
+                console.log("PopupManager.onDocumentClick");
+                console.log(target);
+                // debugger;
 
                 if (this.openedPopups.length === 0) {
                     domEvent.$dispose();
@@ -364,6 +367,7 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                 // restrict this to the popup on the top
                 var popup = /** @type aria.popups.Popup */
                 this.openedPopups[this.openedPopups.length - 1];
+                console.log(popup);
 
                 var ignoreClick = false;
                 for (var j = 0, length = popup._ignoreClicksOn.length; j < length; j++) {
@@ -374,6 +378,7 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                 }
 
                 if (!(ignoreClick || utilsDom.isAncestor(target, popup.getDomElement()))) {
+                    console.log("Actually closed");
                     popup.closeOnMouseClick(domEvent);
                 }
 
