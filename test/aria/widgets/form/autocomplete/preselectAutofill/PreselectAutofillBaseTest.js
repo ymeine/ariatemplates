@@ -127,6 +127,10 @@ Aria.classDefinition({
     },
     $prototype : {
 
+        _normalizeNull : function(value) {
+            return value == null ? null : value;
+        },
+
         runTemplateTest : function () {
             this._runScenario("freetext");
         },
@@ -309,7 +313,8 @@ Aria.classDefinition({
                     }
                 }
             }
-            this.assertJsonEquals(dmValue, value, "Value in data model is not correct. Expected: \""
+
+            this.assertJsonEquals(this._normalizeNull(dmValue), this._normalizeNull(value), "Value in data model is not correct. Expected: \""
                     + jsonUtil.convertToJsonString(value) + "\", found \"" + jsonUtil.convertToJsonString(dmValue)
                     + "\" instead.");
         },

@@ -573,7 +573,9 @@ module.exports = Aria.classDefinition({
                         }
                         // if the text is incorrect, the bound property should
                         // be set to 'undefined'
-                        hasChange = this.setProperty("value", report.errorValue);
+                        if (!this._isPropertyEquals("value", report.errorValue)) {
+                            hasChange = this.setProperty("value", report.errorValue);
+                        }
                     }
                 }
 
@@ -627,7 +629,7 @@ module.exports = Aria.classDefinition({
          */
         _isPropertyEquals : function (propertyName, value) {
             var oldValue = this.getProperty(propertyName);
-            return oldValue === value;
+            return oldValue === value || (oldValue == null && value == null);
         },
         /**
          * Internal method called when one of the model property that the widget is bound to has changed Must be
