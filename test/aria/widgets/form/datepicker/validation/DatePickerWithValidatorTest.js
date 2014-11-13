@@ -10,7 +10,6 @@ Aria.classDefinition({
         });
     },
 
-    // TODO: ADD THIS TO SOME TEST SUITE WHEN READY
     $prototype : {
         runTemplateTest : function () {
             this._datePickerField = this.getInputField("datePicker");

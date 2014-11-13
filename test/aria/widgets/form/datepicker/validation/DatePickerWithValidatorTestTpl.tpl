@@ -14,8 +14,7 @@
  */
 
 {Template {
-    $classpath : "test.aria.widgets.form.datepicker.validation.DatePickerWithValidatorTestTpl",
-    $hasScript : true
+    $classpath : "test.aria.widgets.form.datepicker.validation.DatePickerWithValidatorTestTpl"
 }}
     {macro main()}
         {@aria:DatePicker {
@@ -23,7 +22,7 @@
             bind: {
                 value: {
                     inside: data,
-                    to: "startDate"
+                    to: "date"
                 }
             },
             directOnBlurValidation : false

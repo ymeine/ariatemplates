@@ -21,22 +21,22 @@ Aria.classDefinition({
     $constructor : function () {
         this.$ModuleCtrl.constructor.call(this);
         this._data = {
-            startDate : "",
+            date : "",
             errorMessages : []
         };
+    },
+    $destructor : function () {
+        this.validator.$dispose();
+        this.validator = null;
+        this.$ModuleCtrl.$destructor.call(this);
     },
     $prototype : {
         $publicInterfaceName : "test.aria.widgets.form.datepicker.validation.IDatePickerCtrl",
         init : function (arg, cb) {
-            var validatorPkg = aria.utils.validators;
-
-            var startDateValidator = this.validator = new validatorPkg.Mandatory("date is mandatory");
-            aria.utils.Data.setValidator(this._data, "startDate", startDateValidator);
+            var startDateValidator = this.validator = new aria.utils.validators.Mandatory("date is mandatory");
+            aria.utils.Data.setValidator(this._data, "date", startDateValidator);
 
             this.$callback(cb);
-        },
-        $dispose : function () {
-            this.validator.$dispose();
         },
         submit : function () {
             var messages = {};
