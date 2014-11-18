@@ -48,6 +48,10 @@ module.exports = Aria.beanDefinitions({
                     $mandatory : true,
                     $description : "Message in user language."
                 },
+                escape : {
+                    $default : "true",
+                    $description : "The parameter to pass to the aria.utils.String.escapeForHTML behind (please refer to it for more information). This can be used to disable the automatic escaping or refine its configuration."
+                },
                 code : {
                     $type : "json:String",
                     $mandatory : false,

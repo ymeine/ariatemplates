@@ -13,19 +13,87 @@
  * limitations under the License.
  */
 
+var stringUtils = require("ariatemplates/utils/String");
+var dataUtils = require("ariatemplates/utils/Data");
+
+var TemplateTestCase = require("ariatemplates/jsunit/TemplateTestCase");
+
+require("ariatemplates/widgets/errorlist/ErrorListTemplate.tpl"); // just to be sure the template is loaded when the test is run, since it depends on its (DOM) content
+
 Aria.classDefinition({
     $classpath : "test.aria.widgets.errorlist.ListErrorTestCase",
-    $extends : "aria.jsunit.TemplateTestCase",
+    $extends : TemplateTestCase,
+
+    $constructor : function() {
+        // ---------------------------------------------------------------------
+
+        this.$TemplateTestCase.constructor.call(this);
+
+        // ------------------------------------ template data & test environment
+
+        var type = dataUtils.TYPE_CONFIRMATION;
+        this.data = {
+            errorMessages: [
+                {
+                    localizedMessage : "raw",
+                    type : type
+                },
+                {
+                    localizedMessage : "with <b>HTML</b>",
+                    type : type
+                },
+                {
+                    localizedMessage : "with <span style=\"font-weight: bold;\">HTML</span>",
+                    escape : false,
+                    type : type
+                }
+            ]
+        };
+
+        this.setTestEnv({
+            data: this.data
+        });
+
+        // ------------------------------------------------ comparison functions
+
+        var textComparator = function(errorMessage, domElement) {
+            var text = errorMessage.localizedMessage;
+            var expected = stringUtils.escapeForHTML(text, errorMessage.escape);
+
+            var actual = domElement.innerHTML.trim().replace(/[\r\n]/g, '');
+
+            return actual === expected;
+        };
+
+        var elementComparator = function (errorMessage, domElement) {
+            return domElement.children.length === 0;
+        };
+
+        this.comparators = [
+            textComparator,
+            elementComparator,
+            textComparator
+        ];
+    },
+
     $prototype : {
         runTemplateTest : function () {
-            // Don't do anything, just check that the class is loaded without error
-            aria.core.Timer.addCallback({
-                fn : function () {
-                    this.notifyTemplateTestEnd();
-                },
-                scope : this,
-                delay : 1000
-            });
+            var errorMessages = this.data.errorMessages;
+            var messagesElements = this.templateCtxt.getContainerDiv().getElementsByTagName("ul").item(0).getElementsByTagName("li");
+            var comparators = this.comparators;
+
+            for (var index = 0, length = errorMessages.length; index < length; index++) {
+                var errorMessage = errorMessages[index];
+                var domElement = messagesElements.item(index);
+                var comparator = comparators[index];
+
+                this.assertTrue(
+                    comparator(errorMessage, domElement),
+                    "Message number " + index + " content is different than expected."
+                );
+            }
+
+            this.notifyTemplateTestEnd();
         }
     }
 });
