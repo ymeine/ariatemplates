@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+var Aria = require("ariatemplates/Aria");
+
 var stringUtils = require("ariatemplates/utils/String");
 var dataUtils = require("ariatemplates/utils/Data");
 
@@ -20,7 +22,7 @@ var TemplateTestCase = require("ariatemplates/jsunit/TemplateTestCase");
 
 require("ariatemplates/widgets/errorlist/ErrorListTemplate.tpl"); // just to be sure the template is loaded when the test is run, since it depends on its (DOM) content
 
-Aria.classDefinition({
+module.exports = Aria.classDefinition({
     $classpath : "test.aria.widgets.errorlist.ListErrorTestCase",
     $extends : TemplateTestCase,
 
