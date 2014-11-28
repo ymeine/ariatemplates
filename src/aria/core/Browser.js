@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 var Aria = require("../Aria");
+var arrayUtils = require("../utils/Array");
+var typeUtils = require("../utils/Type");
 
 
 /**
@@ -241,18 +243,6 @@ module.exports = Aria.classDefinition({
         this.isSafariMobile = false;
 
         /**
-         * True if browser type is Safari
-         * @type Boolean
-         */
-        this.isSafari = false;
-
-        /**
-         * True if browser type is Chrome
-         * @type Boolean
-         */
-        this.isChrome = false;
-
-        /**
          * True if browser type is IE Mobile
          * @type Boolean
          */
@@ -318,6 +308,8 @@ module.exports = Aria.classDefinition({
          */
         this.deviceName = "";
 
+        // ---------------------------------------------------------------------
+
         this._init();
     },
     $prototype : {
@@ -332,12 +324,96 @@ module.exports = Aria.classDefinition({
          * @private
          */
         _init : function () {
-            // browser determination
+            this._determineBrowser();
+
+            // -----------------------------------------------------------------
+
+            // common group for webkit-based browsers
+            this.isWebkit = this.isSafari || this.isChrome || this.isPhantomJS;
+
+            if (ua.indexOf("windows") != -1 || ua.indexOf("win32") != -1) {
+                this.isWindows = true;
+
+                this.environment = "Windows";
+            } else if (ua.indexOf("macintosh") != -1) {
+                this.isMac = true;
+
+                this.environment = "MacOS";
+            }
+
+            // -----------------------------------------------------------------
+
+            this._determineVersion();
+            if (this.ua) {
+                this._checkMobileBrowsers();
+            }
+        },
+
+        _determineBrowser: function() {
+            var specifications = [
+                {
+                    mark: 'trident/7.0',
+                    flags: ['IE', 'ModernIE'],
+                    name: 'IE',
+                    version: "11.0"
+                },
+                {
+                    mark: 'opera',
+                    flags: "opera",
+                    name: "Opera"
+                },
+                {
+                    mark: 'chrome',
+                    flags: "Chrome",
+                    name: "Chrome"
+                },
+                {
+                    mark: 'phantomjs',
+                    flags: "PhantomJS",
+                    name: "PhantomJS"
+                },
+                {
+                    mark: 'webkit',
+                    flags: "Safari",
+                    name: "Safari"
+                }
+            ];
+
+            // FIXME Break out of the loop instead
+            arrayUtils.forEach(specifications, function(spec) {
+                if (this.ua.indexOf(spec.mark) > -1) {
+                    // ---------------------------------------------------- name
+
+                    var name = spec.name;
+                    this.name = name;
+
+                    // --------------------------------------------------- flags
+
+                    var flags = spec.flags;
+                    if (flags == null) {
+                        flags = [name];
+                    } else if (!typeUtils.isArray(flags)) {
+                        flags = [flags];
+                    }
+                    arrayUtils.forEach(flags, function(flag) {
+                        this[this.prefixWithIs(flag)] = true;
+                    }, this);
+
+                    // ---------------------------------------------------------
+
+                    break;
+                }
+            }, this);
+
+            // -----------------------------------------------------------------
+
             var ua = this.ua;
+
             if (ua.indexOf('msie') > -1) {
                 this.isIE = true;
                 this.isOldIE = true;
                 this.name = "IE";
+
                 if (/msie[\/\s]((?:\d+\.?)+)/.test(ua)) {
                     this.version = RegExp.$1;
                     var ieVersion = parseInt(this.version, 10);
@@ -372,19 +448,24 @@ module.exports = Aria.classDefinition({
             } else if (ua.indexOf('trident/7.0') > -1) {
                 this.isIE = true;
                 this.isModernIE = true;
+
                 this.name = "IE";
                 this.version = "11.0";
             } else if (ua.indexOf('opera') > -1) {
                 this.isOpera = true;
+
                 this.name = "Opera";
             } else if (ua.indexOf('chrome') > -1) {
                 this.isChrome = true;
+
                 this.name = "Chrome";
             } else if (ua.indexOf('phantomjs') > -1) {
                 this.isPhantomJS = true;
+
                 this.name = "PhantomJS";
             } else if (ua.indexOf('webkit') > -1) {
                 this.isSafari = true;
+
                 this.name = "Safari";
             } else {
                 if (ua.indexOf('gecko') > -1) {
@@ -395,91 +476,213 @@ module.exports = Aria.classDefinition({
                     this.isFirefox = true;
                 }
             }
+        },
 
-            // common group for webkit-based browsers
-            this.isWebkit = this.isSafari || this.isChrome || this.isPhantomJS;
+        _determineVersion: function() {
+            // ---------------------------------------------------- full version
 
-            if (ua.indexOf("windows") != -1 || ua.indexOf("win32") != -1) {
-                this.isWindows = true;
-                this.environment = "Windows";
-            } else if (ua.indexOf("macintosh") != -1) {
-                this.isMac = true;
-                this.environment = "MacOS";
+            var versions = [
+                // already determined for IE
+                {
+                    flag: 'firefox',
+                    regexp: /firefox[\/\s]((?:\d+\.?)+)/
+                },
+                {
+                    flag: 'safari',
+                    regexp: /version[\/\s]((?:\d+\.?)+)/
+                },
+                {
+                    flag: 'chrome',
+                    regexp: /chrome[\/\s]((?:\d+\.?)+)/
+                },
+                {
+                    flag: 'phantomJS',
+                    regexp: /phantomjs[\/\s]((?:\d+\.?)+)/
+                },
+                {
+                    flag: 'opera',
+                    regexp: /version[\/\s]((?:\d+\.?)+)/
+                }
+            ];
+
+            for (var index = 0, length = versions.length; index < length; index++) {
+                var versionSpec = versions[index];
+
+                if (this[this.prefixWithIs(versionSpec.flag)]) {
+                    if (versionSpec.regexp.test(this.ua)) {
+                        this.version = RegExp.$1;
+                    }
+                    break;
+                }
             }
 
-            // version determination
-            if (this.isIE) {
-                // already determined
-            } else if (this.isFirefox) {
-                if (/firefox[\/\s]((?:\d+\.?)+)/.test(ua)) {
-                    this.version = RegExp.$1;
-                }
-            } else if (this.isSafari) {
-                if (/version[\/\s]((?:\d+\.?)+)/.test(ua)) {
-                    this.version = RegExp.$1;
-                }
-            } else if (this.isChrome) {
-                if (/chrome[\/\s]((?:\d+\.?)+)/.test(ua)) {
-                    this.version = RegExp.$1;
-                }
-            } else if (this.isPhantomJS) {
-                if (/phantomjs[\/\s]((?:\d+\.?)+)/.test(ua)) {
-                    this.version = RegExp.$1;
-                }
-            } else if (this.isOpera) {
-                if (/version[\/\s]((?:\d+\.?)+)/.test(ua)) {
-                    this.version = RegExp.$1;
-                }
-            }
+            // --------------------------------------------------- major version
+
             if (this.version) {
                 if (/(\d+)\./.test(this.version)) {
                     this.majorVersion = parseInt(RegExp.$1, 10);
                 }
             }
+        },
 
-            // for Mobile browsers check
-            if (this.ua) {
-
+        _checkMobileBrowsers: function() {
+            var properties = [
                 // To Match OS and its Version
-                var osPattern = [{
-                            pattern : /(android)[\/\s-]?([\w\.]+)*/i
-                        }, {
-                            pattern : /(ip[honead]+).*os\s*([\w]+)*\slike\smac/i
-                        }, {
-                            pattern : /(blackberry).+version\/([\w\.]+)/i
-                        }, {
-                            pattern : /(rim\stablet+).*os\s*([\w\.]+)*/i
-                        }, {
-                            pattern : /(windows\sphone\sos|windows\s?[mobile]*)[\s\/\;]?([ntwce\d\.\s]+\w)/i
-                        }, {
-                            pattern : /(symbian\s?os|symbos|s60(?=;))[\/\s-]?([\w\.]+)*/i
-                        }, {
-                            pattern : /(webos|palm\sos|bada|rim\sos|meego)[\/\s-]?([\w\.]+)*/i
-                        }];
+                {
+                    type: 'os',
+
+                    // for getting OS and Version
+                    processingMethod: function (patternSpec, patternMatch, index) {
+                        // --------------------------------------------- os name
+
+                        var osName = patternSpec.osName;
+                        this.osName = osName;
+
+                        // ------------------------------------------ os version
+
+                        var osVersion = patternMatch[2] || "";
+
+                        if (patternSpec.osVersionPostProcessing != null) {
+                            osVersion = patternSpec.osVersionPostProcessing(osVersion);
+                        }
+                        osVersion = osVersion.replace(/\s*/g, "");
+
+                        this.osVersion = osVersion;
+
+                        // ------------------------------------------------ flag
+
+                        var flag = patternSpec.flag;
+                        if (flag == null) {
+                            flag = osName;
+                        }
+
+                        this[this.prefixWithIs(flag)] = true;
+
+                        // ---------------------------------------------- device
+
+                        var device = patternSpec.device;
+
+                        if (typeUtils.isString(device)) {
+                            this[this.prefixWithIs(device)] = true;
+                        } else if typeUtils.isFunction(device) {
+                            device.apply(this, arguments)
+                        }
+                    },
+
+                    patterns: [
+                        {
+                            pattern : /(android)[\/\s-]?([\w\.]+)*/i,
+
+                            osName: "Android",
+                            device: function() {
+                                // since android version 3 specifically for tablet checking screen resolution make no sense
+                                if (this.osVersion.match(/\d/) + "" == "3") {
+                                    this.isTablet = true;
+                                } else {
+                                    this.isPhone = true;
+                                }
+                            }
+                        },
+                        {
+                            pattern : /(ip[honead]+).*os\s*([\w]+)*\slike\smac/i,
+
+                            osName: "IOS",
+                            osVersionPostProcessing: function() {
+                                this.osVersion = this.osVersion.replace(/\_/g, ".");
+                            },
+
+                            device: function(patternSpec, patternMatch, index) {
+                                if (patternMatch[1] == "iPad") {
+                                    this.isTablet = true;
+                                } else {
+                                    this.isPhone = true;
+                                }
+                            }
+                        },
+                        {
+                            pattern : /(blackberry).+version\/([\w\.]+)/i,
+
+                            osName: "BlackBerry",
+                            device: "phone"
+                        },
+                        {
+                            pattern : /(rim\stablet+).*os\s*([\w\.]+)*/i,
+
+                            osName: "BlackBerry Tablet OS",
+                            flag: "BlackBerry",
+                            device: "tablet"
+                        },
+                        {
+                            pattern : /(windows\sphone\sos|windows\s?[mobile]*)[\s\/\;]?([ntwce\d\.\s]+\w)/i,
+
+                            osName: "Windows",
+                            flag: "WindowsPhone",
+                            device: "phone"
+                        },
+                        {
+                            pattern : /(symbian\s?os|symbos|s60(?=;))[\/\s-]?([\w\.]+)*/i,
+
+                            osName: "Symbian",
+                            device: "phone"
+                        },
+                        {
+                            pattern : /(webos|palm\sos|bada|rim\sos|meego)[\/\s-]?([\w\.]+)*/i,
+
+                            osName: "Other",
+                            flag: "OtherMobile",
+                            device: "phone"
+                        }
+                    ]
+                },
                 // To Match Browser and its Version
-                var browserPattern = [{
+                {
+                    type: 'browser',
+
+                    processingMethod: this.__setBrowser, // for getting Browser and Version
+                    patterns: [
+                        {
                             pattern : /(chrome|crios)\/((\d+)?[\w\.]+)/i
-                        }, {
+                        },
+                        {
                             pattern : /(mobile\ssafari)\/((\d+)?[\w\.]+)/i
-                        }, {
+                        },
+                        {
                             pattern : /(mobile)\/\w+\s(safari)\/([\w\.]+)/i
-                        }, {
+                        },
+                        {
                             pattern : /(iemobile)[\/\s]?((\d+)?[\w\.]*)/i
-                        }, {
+                        },
+                        {
                             pattern : /(safari)\/((\d+)?[\w\.]+)/i
-                        }, {
+                        },
+                        {
                             pattern : /(series60.+(browserng))\/((\d+)?[\w\.]+)/i
-                        }, {
+                        },
+                        {
                             pattern : /(firefox)\/([\w\.]+).+(fennec)\/\d+/i
-                        }, {
+                        },
+                        {
                             pattern : /(opera\smobi)\/((\d+)?[\w\.-]+)/i
-                        }, {
+                        },
+                        {
                             pattern : /(opera\smini)\/((\d+)?[\w\.-]+)/i
-                        }, {
+                        },
+                        {
                             pattern : /(dolfin|Blazer|S40OviBrowser)\/((\d+)?[\w\.]+)/i
-                        }];
+                        }
+                    ]
+                },
                 // To Match Device Name
-                var devicerPattern = [{
+                {
+                    type: 'device',
+
+                    // for getting the device
+                    processingMethod: function (patternSpec, patternMatch, index) {
+                        this.deviceName = patternMatch[1] || "";
+                    },
+
+                    patterns: [
+                        {
                             pattern : /\(((ipad|playbook));/i
                         }, {
                             pattern : /\(((ip[honed]+));/i
@@ -501,68 +704,29 @@ module.exports = Aria.classDefinition({
                             pattern : /(lg)[e;\s\-\/]+(\w+)*/i
                         }, {
                             pattern : /(blackberry|benq|palm(?=\-)|sonyericsson|acer|asus|dell|huawei|meizu|motorola)[\s_-]?([\w-]+)*/i
-                        }];
+                        }
+                    ]
+                }
+            ];
 
-                // for getting OS and Version
-                this.__testUaMatch(osPattern, "OS");
-                // for getting Browser and Version
-                this.__testUaMatch(browserPattern, "BROWSER");
-                // for getting the device
-                this.__testUaMatch(devicerPattern, "DEVICE");
-            }
-        },
-        /**
-         * private function - To take the User Agents and match the patterns
-         * @param {Array} pattern Array of User Agents
-         * @param {String} type to match from user agents
-         * @private
-         */
-        __testUaMatch : function (pattern, type) {
-            var patternMatch;
-            for (var i = 0, len = pattern.length; i < len; i++) {
-                if (type === "OS") {
-                    patternMatch = this.__checkNavigator(pattern[i].pattern, this.ua);
+            // -----------------------------------------------------------------
+
+            arrayUtils.forEach(properties, function(property) {
+                var patterns = property.patterns;
+                var method = property.processingMethod;
+
+                // -------------------------------------------------------------
+
+                for (var index = 0, length = patterns.length; index < length; index++) {
+                    var patternSpec = patterns[index];
+
+                    var patternMatch = patternSpec.pattern.exec(this.ua);
                     if (patternMatch) {
-                        this.__setOs(patternMatch, i);
+                        method.call(this, patternSpec, patternMatch, index);
                         break;
                     }
-                }
-                if (type === "BROWSER") {
-                    patternMatch = this.__checkNavigator(pattern[i].pattern, this.ua);
-                    if (patternMatch) {
-                        this.__setBrowser(patternMatch, i);
-                        break;
-                    }
-                }
-
-                if (type === "DEVICE") {
-                    patternMatch = this.__checkNavigator(pattern[i].pattern, this.ua);
-                    if (patternMatch) {
-                        this.__setDevice(patternMatch);
-                        break;
-                    }
-                }
-            }
-
-        },
-        /**
-         * private function - Returns the matched user agent
-         * @param {String} pattern string
-         * @param {String} userAgent user agent string
-         * @return {Array} array of matched string for given pattern
-         * @private
-         */
-        __checkNavigator : function (pattern, userAgent) {
-            return pattern.exec(userAgent);
-        },
-        /**
-         * private function - To set the Device Name
-         * @param {Array} Array of matched string for given pattern
-         * @private
-         */
-        __setDevice : function (patternMatch) {
-
-            this.deviceName = patternMatch[1] || "";
+                };
+            }, this);
         },
         /**
          * private function - To set the Browser Name and Version
@@ -570,8 +734,9 @@ module.exports = Aria.classDefinition({
          * @param {Integer} index of the matched pattern
          * @private
          */
-        __setBrowser : function (patternMatch, index) {
+        __setBrowser : function (patternSpec, patternMatch, index) {
             var browserName = ["Mobile Safari", "Chrome", "Other"];
+
             switch (index) {
                 case 0 :
                     this.browserType = browserName[1];
@@ -635,74 +800,17 @@ module.exports = Aria.classDefinition({
                     this.browserVersion = patternMatch[2] || "";
                     this.isOtherBrowser = true;
                     break;
-
             }
-
         },
-        /**
-         * private function - To set the Device OS Name and Version
-         * @param {Array} Array of matched string for given pattern
-         * @param {Integer} index of the matched pattern
-         * @private
-         */
-        __setOs : function (patternMatch, index) {
-            var osName = ["Android", "IOS", "BlackBerry", "BlackBerry Tablet OS", "Windows", "Symbian", "Other"];
-            switch (index) {
-                case 0 :
-                    this.isAndroid = true;
-                    this.osName = osName[0];
-                    this.osVersion = patternMatch[2] || "";
-                    // since android version 3 specifically for tablet checking screen resolution make no sense
-                    if (patternMatch[2] && patternMatch[2].match(/\d/) + "" == "3") {
-                        this.isTablet = true;
-                    } else {
-                        this.isPhone = true;
-                    }
-                    break;
-                case 1 :
-                    this.isIOS = true;
-                    this.osName = osName[1];
-                    var osVer = patternMatch[2] || "";
-                    this.osVersion = osVer.replace(/\_/g, ".");
-                    if (patternMatch[1] == "iPad") {
-                        this.isTablet = true;
-                    } else {
-                        this.isPhone = true;
-                    }
-                    break;
-                case 2 :
-                    this.isBlackBerry = true;
-                    this.osName = osName[2];
-                    this.osVersion = patternMatch[2] || "";
-                    this.isPhone = true;
-                    break;
-                case 3 :
-                    this.isBlackBerry = true;
-                    this.osName = osName[3];
-                    this.osVersion = patternMatch[2] || "";
-                    this.isTablet = true;
-                    break;
-                case 4 :
-                    this.isWindowsPhone = true;
-                    this.osName = osName[4];
-                    this.osVersion = patternMatch[2] || "";
-                    this.isPhone = true;
-                    break;
-                case 5 :
-                    this.isSymbian = true;
-                    this.osName = osName[5];
-                    this.osVersion = patternMatch[2] || "";
-                    this.isPhone = true;
-                    break;
-                case 6 :
-                    this.isOtherMobile = true;
-                    this.osName = osName[6];
-                    this.osVersion = patternMatch[2] || "";
-                    this.isPhone = true;
-                    break;
 
-            }
-            this.osVersion = this.osVersion.replace(/\s*/g, "");
+        // ------------------------------------------------------------- Helpers
+
+        capitalize: function(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+
+        prefixWithIs: function(string) {
+            return "is" + this.capitalize(string);
         }
     }
 });
