@@ -20,7 +20,7 @@ Aria.classDefinition({
     $prototype : {
         testToString : function () {
             var browserToString = aria.core.Browser.toString();
-            this.assertTrue(browserToString != "[object Object]", "aria.core.Browser.toString method not overrided correctly. "
+            this.assertTrue(browserToString != "[object Object]", "aria.core.Browser.toString method not overridden correctly. "
                     + "Expected something different from [object Object] and got " + browserToString);
         },
         testVersion : function () {
