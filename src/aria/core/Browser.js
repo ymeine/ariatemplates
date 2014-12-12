@@ -18,7 +18,6 @@
 // --------------------------------------------------------------------- imports
 
 var Aria = require("../Aria");
-var arrayUtils = require("../utils/Array");
 var typeUtils = require("../utils/Type");
 
 
@@ -30,7 +29,7 @@ function stringIncludes(string, pattern) {
 }
 
 function stringIncludesOne(string) {
-    var patterns = arguments.slice(1);
+    var patterns = Array.prototype.slice.call(arguments, stringIncludesOne.length);
 
     var match = false;
 
@@ -300,7 +299,7 @@ module.exports = Aria.classDefinition({
          * True if view type if Desktop
          * @type Boolean
          */
-        this.DesktopView = false;
+        this.isDesktopView = false;
 
         // Check for browser Type
 
@@ -847,7 +846,7 @@ module.exports = Aria.classDefinition({
                             flag: 'IEMobile',
                             postProcessing: function(patternSpec, patternMatch, index) {
                                 if (patternMatch[0] && (stringIncludes(patternMatch[0], 'XBLWP7') || stringIncludes(patternMatch[0], 'ZuneWP7'))) {
-                                    this.DesktopView = true;
+                                    this.isDesktopView = true;
                                 } else {
                                     this.isMobileView = true;
                                 }
