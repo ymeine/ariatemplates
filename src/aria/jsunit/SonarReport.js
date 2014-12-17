@@ -30,7 +30,7 @@ module.exports = Aria.classDefinition({
         this.testRunner = conf.testRunner;
 
         var browserName = ariaCoreBrowser.toString().replace(/ /g, "_").replace(/\./g, "");
-        var osName = ariaCoreBrowser.environment;
+        var osName = ariaCoreBrowser.osName;
         this.__browserInfo = browserName + "_" + osName + ".";
     },
     $destructor : function () {

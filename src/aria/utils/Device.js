@@ -13,217 +13,561 @@
  * limitations under the License.
  */
 var Aria = require("../Aria");
+var ariaUtilsArray = require("../utils/Array");
 var ariaCoreBrowser = require("../core/Browser");
+var UserAgent = require("../core/useragent/UserAgent");
+var ariaUtilsEvent = require("./Event");
+/* BACKWARD-COMPATIBILITY-BEGIN (deprecate Browser properties) */
+var ariaUtilsType = require("../utils/Type");
+/* BACKWARD-COMPATIBILITY-END (deprecate Browser properties) */
+
 
 
 module.exports = Aria.classDefinition({
     $classpath : "aria.utils.Device",
     $singleton : true,
+    $events : {
+        "orientationchange" : {
+            description : "This event is fired when there is orientation change on the device",
+            properties : {
+                "isPortrait" : "Boolean value indicating that the screen's orientation is portrait"
+            }
+        }
+    },
+
+    /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+    $statics : {
+        DEPRECATED_REPLACED_PROPERTY : "Property %1 is deprecated, use %2 instead.",
+        DEPRECATED_REMOVED_PROPERTY : "Property %1 is deprecated and is gonna be removed (not supported anymore).",
+        DEPRECATED_REPLACED_METHOD : "Method %1 is deprecated, use %2 instead.",
+        DEPRECATED_REMOVED_METHOD : "Method %1 is deprecated and is gonna be removed (not supported anymore)."
+    },
+    /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
     $constructor : function () {
-        var navigator = Aria.$global.navigator;
-
+        /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
         /**
+         * <b>Deprecated, use aria.core.Browser.ua instead.</b>
+         *
+         * <p>
          * The user agent string.
+         * </p>
+         *
          * @type String
+         * @deprecated use aria.core.Browser.ua instead
          */
-        this.ua = navigator ? navigator.userAgent.toLowerCase() : "";
+        this.ua = null;
+        /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
 
         /**
-         * Cache for the supported styles
-         * @type Object
+         * Current orientation value to avoid unnecessary rechecking.
+         * @type Boolean
          * @private
          */
-        this._styleCache = {};
+        this._isPortrait = this.isPortrait(true);
+
+        /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+        this._deprecatedProperties = []; // for init to process well
+        /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+        this.init();
+
+        /* BACKWARD-COMPATIBILITY-BEGIN (deprecate Browser properties) */
+        var properties = [
+            {
+                name: "ua",
+                alternative: "aria.core.Browser.ua"
+            },
+
+            {
+                name: "isMobile",
+                type: "method",
+                underlying: "isPhone"
+            },
+            {
+                name: "isPhoneGap",
+                type: "method",
+                underlying: {
+                    name: "isPhoneGap",
+                    container: ariaCoreBrowser,
+                    containerName: "aria.core.Browser"
+                }
+            },
+            {
+                name: "is2DTransformCapable",
+                type: "method",
+                underlying: {
+                    name: "is2DTransformCapable",
+                    container: ariaCoreBrowser,
+                    containerName: "aria.core.Browser"
+                }
+            },
+            {
+                name: "is3DTransformCapable",
+                type: "method",
+                underlying: {
+                    name: "is3DTransformCapable",
+                    container: ariaCoreBrowser,
+                    containerName: "aria.core.Browser"
+                }
+            }
+        ];
+
+        var deprecatedProperties = [];
+        var isString = ariaUtilsType.isString;
+        ariaUtilsArray.forEach(properties, function(property) {
+            // ------------------------------------------------ property factory
+
+            if (ariaUtilsType.isString(property)) {
+                property = {name: property};
+            }
+
+            // ------------------------------------------------------------ name
+
+            var name = property.name;
+
+            // ------------------------------------------------------------ type
+
+            var type = property.type;
+
+            if (type == null) {
+                type = "attribute";
+            }
+
+            property.type = type;
+
+            // ----------------------------------------------- underlying method
+
+            var possibleAlternative;
+
+            if (type == "method") {
+                var underlying = property.underlying;
+
+                if (isString(underlying)) {
+                    underlying = {name: underlying};
+                }
+
+                var underlyingName = underlying.name;
+
+                var underlyingContainer = underlying.container;
+                if (underlyingContainer == null) {
+                    underlyingContainer = this;
+                }
+                underlying.container = underlyingContainer;
+
+                var underlyingContainerName = underlying.containerName;
+
+                // -------------------------------------------------------------
+
+                possibleAlternative = "";
+                if (underlyingContainerName != null) {
+                    possibleAlternative += underlyingContainerName + ".";
+                }
+                possibleAlternative += underlyingName;
+
+                underlying = function() {
+                    return underlyingContainer[underlyingName].apply(underlyingContainer, arguments);
+                };
+
+                property.underlying = underlying;
+            }
+
+            // ----------------------------------------------------- alternative
+
+            var alternative = property.alternative;
+
+            if (alternative == null && possibleAlternative != null) {
+                alternative = possibleAlternative;
+            }
+
+            property.alternative = alternative;
+
+            // --------------------------------------------------- extrapolation
+
+            var loggingMessage;
+            var loggingMessageArguments = [name];
+
+            if (alternative != null) {
+                loggingMessage = type == "attribute" ? "DEPRECATED_REPLACED_PROPERTY" : "DEPRECATED_REPLACED_METHOD";
+                loggingMessageArguments.push(alternative);
+            } else {
+                loggingMessage = type == "attribute" ? "DEPRECATED_REMOVED_PROPERTY" : "DEPRECATED_REMOVED_METHOD";
+            }
+
+            property.loggingMessage = this[loggingMessage];
+            property.loggingMessageArguments = loggingMessageArguments;
+
+            // ---------------------------------------------------------- result
+
+            deprecatedProperties.push(property);
+        }, this);
+
+        this._deprecatedProperties = deprecatedProperties;
+        this.__deprecateProperties();
+        this.__ensureDeprecatedProperties();
+        /* BACKWARD-COMPATIBILITY-END (deprecate Browser properties) */
     },
     $prototype : {
+        /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
         /**
-         * Checks whether it is a Mobile Device including a Tablet
+         * Applies deprecation for properties.
+         *
+         * <p>
+         * For attributes, puts in place - if possible - properties descriptors in order to be able to log warnings for all possible accesses to the deprecated properties.
+         * </p>
+         * <p>
+         * For methods, wraps the actual implementation to call it but log a deprecation warning before.
+         * </p>
          */
-        isDevice : function () {
-            var isDevice = /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(this.ua)
-                    || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(this.ua.substr(0, 4))
-                    || this.isTablet();
+        __deprecateProperties : function() {
+            if (ariaCoreBrowser.supportsPropertyDescriptors()) {
+                ariaUtilsArray.forEach(this._deprecatedProperties, function(property) {
+                    // --------------------------------- arguments destructuring
 
-            if (isDevice === true) {
-                this.isDevice = Aria.returnTrue;
-            } else {
-                this.isDevice = Aria.returnFalse;
-            }
-            return this.isDevice();
-        },
+                    var name = property.name;
+                    var type = property.type;
+                    var underlying = property.underlying;
+                    var loggingMessage = property.loggingMessage;
+                    var loggingMessageArguments = property.loggingMessageArguments;
 
-        /**
-         * Checks whether it is a Mobile Device rather than a Tablet
-         */
-        isMobile : function () {
-            if (this.isDevice() === true && this.isTablet() === false) {
-                this.isMobile = Aria.returnTrue;
-            } else {
-                this.isMobile = Aria.returnFalse;
-            }
-            return this.isMobile();
-        },
+                    // ---------------------------------------------- processing
 
-        /**
-         * Checks whether it is a Desktop
-         */
-        isDesktop : function () {
-            if (this.isDevice() === false) {
-                this.isDesktop = Aria.returnTrue;
-            } else {
-                this.isDesktop = Aria.returnFalse;
-            }
-            return this.isDesktop();
-        },
+                    var self = this;
 
-        /**
-         * Checks whether the device is a Tablet Device
-         */
-        isTablet : function () {
-            var isTablet = /(iPad|SCH-I800|android 4.0|GT-P1000|GT-P1000R|GT-P1000M|SGH-T849|SHW-M180S|android 3.0|xoom|NOOK|playbook|tablet|silk|kindle|GT-P7510)/i.test(this.ua);
-            if (isTablet) {
-                this.isTablet = Aria.returnTrue;
-            } else {
-                this.isTablet = Aria.returnFalse;
-            }
-            return this.isTablet();
-        },
+                    if (type == "attribute") {
+                        var prefixedName = "_" + name;
+                        this[prefixedName] = this[name];
 
-        /**
-         * Checks whether it is a Touch Device
-         */
-        isTouch : function () {
-            var blackBerryTouch = ariaCoreBrowser.isBlackBerry;
-            var bbModel = this._getBlackBerryVersion();
-            if (".9670.9100.9105.9360.9350.9330.9320.9310.9300.9220.9780.9700.9650.".indexOf("." + bbModel + ".")) {
-                blackBerryTouch = false;
-            }
-
-            var window = Aria.$window;
-            if ((('ontouchstart' in window) || window.DocumentTouch && window.document instanceof window.DocumentTouch)
-                    || !!blackBerryTouch) {
-                this.isTouch = Aria.returnTrue;
-            } else {
-                this.isTouch = Aria.returnFalse;
-            }
-            return this.isTouch();
-        },
-
-        /**
-         * Get the BlackBerry model from the User Agent
-         * @return {String}
-         * @private
-         */
-        _getBlackBerryVersion : function () {
-            var match = this.ua.match(/BlackBerry[\/\s]*(\d+).+/i);
-            if (match) {
-                return match[1];
+                        Object.defineProperty(this, name, {
+                            get : function () {
+                                self.$logWarn(loggingMessage, loggingMessageArguments);
+                                return self[prefixedName];
+                            },
+                            set : function (value) {
+                                self.$logWarn(loggingMessage, loggingMessageArguments);
+                                self[prefixedName] = value;
+                            }
+                        });
+                    } else {
+                        this[name] = function() {
+                            self.$logWarn(loggingMessage, loggingMessageArguments);
+                            return underlying.apply(self, arguments);
+                        };
+                    }
+                }, this);
             }
         },
 
         /**
-         * Checks whether the Browser supports 2D transform
+         * Ensures that public properties will always return the proper value, no matter if and how the deprecation was put in place.
          */
-        is2DTransformCapable : function () {
-            if (this._isStyleSupported('transform')) {
-                this.is2DTransformCapable = Aria.returnTrue;
-            } else {
-                this.is2DTransformCapable = Aria.returnFalse;
+        __ensureDeprecatedProperties : function() {
+            if (!ariaCoreBrowser.supportsPropertyDescriptors()) {
+                ariaUtilsArray.forEach(this._deprecatedProperties, function(property) {
+                    var type = property.type;
+
+                    if (type == "attribute") {
+                        var name = property.name;
+                        var prefixedName = "_" + name;
+
+                        this[name] = this[prefixedName];
+                    }
+                }, this);
             }
-            return this.is2DTransformCapable();
+        },
+        /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+
+        /**
+         * Makes the class work with the given user agent.
+         *
+         * <p>
+         * If no user agent is given, current browser's one is taken.
+         * </p>
+         *
+         * @param {String} userAgent The user agent to take into account in this class
+         *
+         * @return {Object} The user agent wrapper used to compute the properties (see aria.core.useragent.UserAgent.getUserAgentInfo)
+         */
+        init : function (userAgent) {
+            var userAgentWrapper = ariaCoreBrowser.init(userAgent);
+
+            this.__userAgentWrapper = userAgentWrapper;
+
+            /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+            this._ua = userAgentWrapper.ua;
+            this.__ensureDeprecatedProperties();
+            /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+
+            return userAgentWrapper;
         },
 
         /**
-         * Checks whether the Browser supports 3D transform
+         * Returns the model of the device, if any.
+         *
+         * @return {String} The model of the device if any, an empty otherwise
          */
-        is3DTransformCapable : function () {
-            if (this._isStyleSupported('perspective')) {
-                this.is3DTransformCapable = Aria.returnTrue;
-            } else {
-                this.is3DTransformCapable = Aria.returnFalse;
+        model : function() {
+            var model = this.__userAgentWrapper.results.device.model;
+
+            if (model != null) {
+                return model;
             }
-            return this.is3DTransformCapable();
+
+            return "";
         },
 
         /**
-         * Check whether the style property is supported by the browser
-         * @param {String} property CSS Property
-         * @private
+         * Returns the vendor of the device, if any.
+         *
+         * @return {String} The device vendor if any, an empty otherwise
          */
-        _isStyleSupported : function (property) {
-            // first check in the cache
-            if (property in this._styleCache) {
-                return this._styleCache[property];
+        vendor: function () {
+            var vendor = this.__userAgentWrapper.results.device.vendor;
+
+            if (vendor != null) {
+                return vendor;
             }
 
-            var prefixes = ['Moz', 'Webkit', 'Khtml', 'O', 'Ms'];
+            return "";
+        },
 
-            var element = Aria.$window.document.documentElement;
-            var style = element.style;
+        /**
+         * Returns the device name, which is a mix of model and vendor properties when available.
+         *
+         * <p>
+         * The format is the following: <em>vendor - model</em>
+         * </p>
+         *
+         * @return {String} The device name or an empty string if no information at all is available
+         */
+        deviceName: function() {
+            var parts = [
+                this.vendor(),
+                this.model()
+            ];
 
-            // test standard property
-            if (typeof style[property] === 'string') {
-                this._styleCache[property] = true;
-                return true;
-            }
-
-            // capitalize
-            var upperCase = property.charAt(0).toUpperCase() + property.slice(1);
-
-            // test vendor specific properties
-            for (var i = 0, len = prefixes.length; i < len; i++) {
-                var prefixed = prefixes[i] + upperCase;
-                if (typeof style[prefixed] === 'string') {
-                    this._styleCache[property] = true;
-                    return true;
+            for (var index = parts.length - 1; index >= 0; index--) {
+                var part = parts[index];
+                if (part == null || part.length == null || part.length <= 0) {
+                    parts.splice(index, 1);
                 }
             }
 
-            // couldn't find it
-            this._styleCache[property] = false;
-            return false;
+            var deviceName = parts.join(" - ");
+
+            return deviceName;
         },
 
         /**
-         * Checks whether the Device supports PhoneGap/Cordova
+         * Checks whether it is a phone device rather than a tablet.
+         *
+         * <p>
+         * We consider that if a mobile operating system is detected but nothing tells that is is a tablet, by default the device is a mobile phone.
+         * </p>
+         *
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
          */
-        isPhoneGap : function () {
-            var window = Aria.$window;
-            if ((window.cordova && window.device) || (window.device && window.device.phonegap)) {
-                this.isPhonegap = Aria.returnTrue;
-            } else {
-                this.isPhonegap = Aria.returnFalse;
+        isPhone : function () {
+            // -------------------------------------------- result initial value
+
+            var result = false;
+
+            // -------------------------------------------------- standard check
+
+            var deviceType = this.__userAgentWrapper.results.device.type;
+
+            if (!result) {
+                if (deviceType != null) {
+                    result = UserAgent.normalizeName(deviceType) == "mobile";
+                }
             }
-            return this.isPhonegap();
+
+            // --------------------------------------------------- special cases
+
+            if (!result) {
+                if (!this.isTablet()) {
+                    result = ariaCoreBrowser.isAndroid
+                    || ariaCoreBrowser.isBlackBerry
+                    || ariaCoreBrowser.isIOS
+                    || ariaCoreBrowser.isSymbian
+                    || ariaCoreBrowser.isWindowsPhone
+                    || UserAgent.normalizeName(ariaCoreBrowser.osName) == "webos"
+                    ;
+                }
+            }
+
+            // ---------------------------------------------------------- result
+
+            return !!result;
+        },
+
+        /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+        /**
+         * <b>Deprecated, use isPhone instead.</b>
+         *
+         * <p>
+         * Checks whether it is a phone device rather than a tablet.
+         * </p>
+         *
+         * @name aria.utils.Device.isMobile
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         * @deprecated use isPhone instead
+         */
+        /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+
+        /**
+         * Checks whether the device is a tablet device rather than a phone.
+         *
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         */
+        isTablet : function () {
+            // -------------------------------------------- result initial value
+
+            var result = false;
+
+            // -------------------------------------------------- standard check
+
+            var deviceType = this.__userAgentWrapper.results.device.type;
+            if (!result) {
+                if (deviceType != null) {
+                    result = UserAgent.normalizeName(deviceType) == "tablet";
+                }
+            }
+
+            // --------------------------------------------------- special cases
+
+            if (!result) {
+                var userAgent = this.__userAgentWrapper.ua.toLowerCase();
+                result = /(iPad|SCH-I800|GT-P1000|GT-P1000R|GT-P1000M|SGH-T849|SHW-M180S|android 3.0|xoom|NOOK|playbook|tablet|silk|kindle|GT-P7510)/i.test(userAgent);
+            }
+
+            // ---------------------------------------------------------- result
+
+            return !!result;
         },
 
         /**
-         * Checks the orientation whether it is portrait or landscape
+         * Checks whether the computer is a mobile device.
+         *
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
          */
-        isPortrait : function () {
-            if (this._getBlackBerryVersion() === "9670") {
-                // 9670 is a special model that is landscape
-                return false;
-            }
-            var orientation = Aria.$window.orientation;
-            if (orientation && (orientation !== 0 && orientation !== 180)) {
-                // device is rotated
-                return false;
+        isDevice : function () {
+            return this.isPhone() || this.isTablet();
+        },
+
+        /**
+         * Checks whether the computer is a desktop.
+         *
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         */
+        isDesktop : function () {
+            return !(this.isDevice());
+        },
+
+        /**
+         * Checks whether it is a touch device.
+         *
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         */
+        isTouch : function () {
+            var isTouch = false;
+
+            if (ariaCoreBrowser.isBlackBerry) {
+                if (!ariaUtilsArray.contains([9670, 9100, 9105, 9360, 9350, 9330, 9320, 9310, 9300, 9220, 9780, 9700, 9650], +this.model())) {
+                    isTouch = true;
+                }
             } else {
-                return true;
+                var window = Aria.$window;
+
+                if (('ontouchstart' in window) || window.DocumentTouch && window.document instanceof window.DocumentTouch) {
+                    isTouch = true;
+                }
             }
+
+            return !!isTouch;
+        },
+
+        /**
+         * Override the $on function to only listen to resize (for orientation changes) when needed
+         * @override
+         */
+        $on : function () {
+            ariaUtilsEvent.addListener(Aria.$window, "resize", {
+                fn : this._onResize,
+                scope : this
+            });
+            this.$JsObject.$on.apply(this, arguments);
+        },
+
+        /**
+         * Checks device orientation and raises event accordingly.
+         * @private
+         */
+        _onResize : function() {
+            var isPortrait = this.isPortrait(true);
+            if (isPortrait !== this._isPortrait) {
+                this.$raiseEvent({
+                    name : "orientationchange",
+                    isPortrait : isPortrait
+                });
+                this._isPortrait = isPortrait;
+            }
+        },
+
+        /**
+         * Checks whether the device's orientation is portrait.
+         *
+         * @param {Boolean} forceCheck If true, forces rechecking instead of returning current orientation
+         *
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         */
+        isPortrait : function (forceCheck) {
+            if (forceCheck) return Aria.$window.innerHeight > Aria.$window.innerWidth;
+
+            return this._isPortrait;
         },
 
         /**
          * Checks whether the cursor moved with a trackball or trackpad.
+         *
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
          */
         isClickNavigation : function () {
-            if (ariaCoreBrowser.isBlackBerry) {
-                this.isClickNavigation = Aria.returnTrue;
-            } else {
-                this.isClickNavigation = Aria.returnFalse;
-            }
-            return this.isClickNavigation();
+            return ariaCoreBrowser.isBlackBerry;
         }
+
+        /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+        /**
+         * <b>Deprecated, use aria.core.Browser.isPhoneGap instead.</b>
+         *
+         * <p>
+         * Checks whether the browser supports PhoneGap/Cordova.
+         * </p>
+         *
+         * @name aria.utils.Device.isPhoneGap
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         * @deprecated use aria.core.Browser.isPhoneGap instead
+         */
+        /**
+         * <b>Deprecated, use aria.core.Browser.is2DTransformCapable instead.</b>
+         *
+         * <p>
+         * Checks whether the Browser supports 2D transform.
+         * </p>
+         *
+         * @name aria.utils.Device.is2DTransformCapable
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         * @deprecated use aria.core.Browser.is2DTransformCapable instead
+         */
+        /**
+         * <b>Deprecated, use aria.core.Browser.is3DTransformCapable instead.</b>
+         *
+         * <p>
+         * Checks whether the Browser supports 3D transform.
+         * </p>
+         *
+         * @name aria.utils.Device.is3DTransformCapable
+         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         * @deprecated use aria.core.Browser.is3DTransformCapable instead
+         */
+         /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
     }
 });
