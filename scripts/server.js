@@ -93,8 +93,34 @@ app.all(/^\/aria-templates\/test\/(.*)$/, function (req, res, next) {
     res.sendfile(file);
 });
 
-// Default to 8080 if we're not using npm
-var port = process.env.npm_package_config_port || 8080;
+// ------------------------------------------------------------------------ port
+
+// Precedence order for the port option:
+// - command line argument
+// - npm configuration (if available)
+// - default value
+var port;
+
+if (port == null) {
+    var argv2 = process.argv[2];
+    if (argv2 != null) {
+        port = argv2;
+    }
+}
+
+if (port == null) {
+    var npm_package_config_port = process.env.npm_package_config_port;
+    if (npm_package_config_port != null) {
+        port = npm_package_config_port;
+    }
+}
+
+if (port == null) {
+    port = 8080;
+}
+
+// -----------------------------------------------------------------------------
+
 var server = app.listen(port);
 
 server.on("listening", serverStarted);
