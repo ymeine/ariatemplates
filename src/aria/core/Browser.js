@@ -41,6 +41,13 @@ module.exports = Aria.classDefinition({
          */
         this._styleCache = null;
 
+        /**
+         * Cache for properties computed by <em>init</em> for a given user agent.
+         * @type Object
+         * @private
+         */
+        this._propertiesCache = {};
+
         ////////////////////////////////////////////////////////////////////////
         // User agent
         ////////////////////////////////////////////////////////////////////////
@@ -447,11 +454,6 @@ module.exports = Aria.classDefinition({
         ////////////////////////////////////////////////////////////////////////
 
         /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
-        this._deprecatedProperties = []; // for init to process well
-        /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
-        this.init();
-
-        /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
         var properties = [
             "isIE6",
             {
@@ -537,8 +539,9 @@ module.exports = Aria.classDefinition({
 
         this._deprecatedProperties = deprecatedProperties;
         this.__deprecateProperties();
-        this.__ensureDeprecatedProperties();
         /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+
+        this.init();
     },
 
     $prototype : {
@@ -582,6 +585,7 @@ module.exports = Aria.classDefinition({
          * Ensures that public properties will always return the proper value, no matter if and how the deprecation was put in place.
          */
         __ensureDeprecatedProperties : function() {
+            // debugger;
             // -------------------------------------------- synonymy application
 
             ariaUtilsArray.forEach(this._deprecatedProperties, function(property) {
@@ -609,27 +613,494 @@ module.exports = Aria.classDefinition({
         /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
 
         /**
-         * Tells whether property descriptors are fully supported by the browser or not.
+         * Tells whether property descriptors are fully supported by the <b>running</b> browser or not.
          *
          * @return {Boolean} <em>true</em> if property descriptors are fully supported, <em>false</em> otherwise.
          */
         supportsPropertyDescriptors : function() {
-            return !(Object.defineProperty == null || this.isIE8);
+            var userAgentWrapper = UserAgent.getUserAgentInfo();
+            var runningBrowser = this._getProperties(userAgentWrapper);
+            return !(Object.defineProperty == null || runningBrowser.isIE8);
         },
 
         /**
-         * Resets all properties to their default values.
+         * Sets the flag corresponding to the given name to the given state.
          *
-         * @return {Object} The user agent wrapper used to compute the properties (see aria.core.useragent.UserAgent.getUserAgentInfo)
+         * Setting a flag corresponds to assigning its state value to a property whose name is built by:
+         * - capitalizing the name
+         * - prepending it with "is"
+         *
+         * If no explicit state is given, true is assumed.
+         *
+         * @param {Object} receiver The object receiving the resulting property
+         * @param {String} name The name of the flag
+         * @param {Boolean} state The state of the flag
+         *
+         * @return {Boolean} The final state of the flag.
          */
-        _resetProperties : function(userAgent) {
-            var userAgentWrapper = UserAgent.getUserAgentInfo(userAgent);
+        _setFlag : function(receiver, name, state) {
+            if (state == null) {
+                state = true;
+            }
 
+            var flagName = this._buildFlagName(name);
+            receiver[flagName] = state;
+
+            return state;
+        },
+
+        _buildFlagName : function (flag) {
+            return "is" + this._capitalize(flag);
+        },
+
+        /**
+         * Capitalizes the given string.
+         *
+         * Capitalizing means concerting the first letter to upper case, leaving all the others untouched.
+         *
+         * @param {String} string The string to capitalize.
+         *
+         * @return the capitalized string
+         */
+        _capitalize : function (string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+
+        /**
+         * Imports an object into another.
+         *
+         * Own properties from given source are copied into given destination.
+         *
+         * @param {Object} source The source object from which properties should be read.
+         * @param {Object} destination The object receiving the properties. Defaults to <em>this</em>.
+         *
+         * @return the destination object.
+         */
+        _import : function(source, destination) {
+            // -------------------------------------------- arguments processing
+
+            if (destination == null) {
+                destination = this;
+            }
+
+            // ------------------------------------------------------ processing
+
+            for (var key in source) {
+                if (source.hasOwnProperty(key)) {
+                    destination[key] = source[key];
+                }
+            }
+
+            // ---------------------------------------------------------- return
+
+            return destination;
+        },
+
+        /**
+         * Returns properties corresponding to given user agent information.
+         *
+         * The returned properties match a particular API, the one finally exposed by this class. Also, they benefit from a cache mechanism.
+         *
+         * @param {Object} userAgentWrapper
+         */
+        _getProperties : function(userAgentWrapper) {
+            // ----------------------------------------------- early termination
+
+            var cacheKey = userAgentWrapper.ua.toLowerCase();
+
+            var values = this._propertiesCache[cacheKey];
+
+            if (values != null) {
+                return values;
+            }
+
+            // ----------------------------------------------------- computation
+
+            values = this._computeProperties(userAgentWrapper);
+
+            // ---------------------------------------------------------- output
+
+            this._propertiesCache[cacheKey] = values;
+            return values;
+        },
+
+        /**
+         * Computes properties for the given user agent.
+         */
+        _computeProperties : function(userAgentWrapper) {
+            var output = {};
+
+            ////////////////////////////////////////////////////////////////////
+            // Initialization
+            ////////////////////////////////////////////////////////////////////
+
+            var uaInfo = userAgentWrapper.results;
+
+            var browser = uaInfo.browser;
+            var engine = uaInfo.engine;
+            var os = uaInfo.os;
+
+            // ---------------------------------------- simply copied properties
+
+            output.ua = userAgentWrapper.ua;
+
+            // --------------------------------------- for anticipated detection
+
+            var version = null;
+
+
+
+            ////////////////////////////////////////////////////////////////////
+            // OS
+            ////////////////////////////////////////////////////////////////////
+
+            // --------------------------------------------------------- version
+
+            var osVersion = os.version;
+
+            if (osVersion != null) {
+                output.osVersion = osVersion;
+            }
+
+            // ------------------------------------------------------------ name
+
+            var osName = os.name;
+
+            if (osName == null) {
+                osName = "";
+            }
+
+            switch (UserAgent.normalizeName(osName)) {
+                case "windows":
+                    if (osVersion == " M") {
+                        // user agents with "Windows Mobile" instead of "Windows Phone" not properly recognized.
+                        this._setFlag(output, "WindowsPhone");
+                        if (/(Windows Mobile; WCE;)/ig.test(output.ua)) {
+                            output.osVersion = "WCE";
+                        } else {
+                            output.osVersion = "";
+                        }
+                    } else {
+                        this._setFlag(output, "Windows");
+                        output.environment = "Windows";
+                    }
+                    break;
+
+                case "macos":
+                    this._setFlag(output, "Mac");
+                    output.environment = "MacOS";
+                    break;
+
+                case 'ios':
+                    this._setFlag(output, "IOS");
+                    break;
+
+                case 'windowsphoneos':
+                    this._setFlag(output, "WindowsPhone");
+                    break;
+
+                default:
+                    if (ariaUtilsArray.contains(["Android", "BlackBerry", "Symbian"], osName)) {
+                        this._setFlag(output, osName);
+                    } else {
+                        this._setFlag(output, "OtherOS");
+                    }
+            }
+
+            output.osName = osName;
+
+
+
+            ////////////////////////////////////////////////////////////////////
+            // Browser
+            ////////////////////////////////////////////////////////////////////
+
+            // ------------------------------------------------------------ name
+
+            var name = browser.name;
+
+            var maybeOtherBrowser = false;
+
+            if (name != null) {
+                switch (UserAgent.normalizeName(name)) {
+                    case "mobilesafari":
+                        if (output.isAndroid) {
+                            this._setFlag(output, "AndroidBrowser");
+                        } else if (output.isBlackBerry) {
+                            this._setFlag(output, "BlackBerryBrowser");
+                        } else {
+                            this._setFlag(output, "SafariMobile");
+                        }
+                        break;
+                    case "operamini":
+                        this._setFlag(output, "OperaMini");
+                        break;
+                    case "operamobi":
+                        this._setFlag(output, "OperaMobile");
+                        break;
+                    case "safari":
+                        if (output.isSymbian) {
+                            this._setFlag(output, "S60");
+                        } else if (/(phantomjs)/ig.test(output.ua)) {
+                            this._setFlag(output, "PhantomJS");
+                            name = "PhantomJS";
+                        } else {
+                            this._setFlag(output, "Safari");
+                        }
+                        break;
+                    default:
+                        maybeOtherBrowser = true;
+                }
+
+                if (ariaUtilsArray.contains(["Firefox", "Chrome", "IE", "Opera", "IEMobile"], name)) {
+                    this._setFlag(output, name);
+                    maybeOtherBrowser = false;
+                }
+            } else {
+                if (output.isBlackBerry) {
+                    this._setFlag(output, "BlackBerryBrowser");
+                    name = "BlackBerry";
+                }
+            }
+
+            if (maybeOtherBrowser) {
+                this._setFlag(output, "OtherBrowser");
+            }
+
+            // Special case - NGBrowser
+            var match = /BrowserNG\/(\d+(?:\.\d+)*)/ig.exec(output.ua);
+            if (match != null) {
+                name = "NokiaBrowser";
+                version = match[1];
+            }
+
+            output.name = name;
+
+            // --------------------------------------- major version (detection)
+
+            var detectedMajorVersion = null;
+
+            if (output.isIE) {
+                // PTR 05207453
+                // With compatibility view, it can become tricky to
+                // detect the version.
+                // What is important to detect here is the document mode
+                // (which defines how the browser really
+                // reacts), NOT the browser mode (how the browser says
+                // it reacts, through conditional comments
+                // and ua string).
+                //
+                // In IE7 document.documentMode is undefined. For IE8+
+                // (also in document modes emulating IE7) it is defined
+                // and readonly.
+                /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+                if (browser.major != "6") {
+                /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+                var document = Aria.$frameworkWindow.document;
+                detectedMajorVersion = document.documentMode || 7;
+                /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+                }
+                /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+            }
+
+            // ---------------------------------------------------- full version
+
+            if (version == null) {
+                version = browser.version;
+            }
+
+            if (detectedMajorVersion != null) {
+                // the browser is not what it claims to be!
+                // make sure output.version is consistent with detected
+                // major version
+                version = detectedMajorVersion + ".0";
+            }
+
+            if (version == null) {
+                if (output.isPhantomJS) {
+                    if (/phantomjs[\/\s]((?:\d+\.?)+)/ig.test(output.ua)) {
+                        version = RegExp.$1;
+                    }
+                }
+            }
+
+            // ----------------------------------------------- major version (2)
+
+            var majorVersion;
+
+            if (detectedMajorVersion != null) {
+                majorVersion = detectedMajorVersion;
+            } else if (version != null) {
+                var part = /^(\d+)*/.exec(version);
+                if (part != null) {
+                    majorVersion = part[1];
+                }
+            } else if (browser.major != null) {
+                majorVersion = browser.major;
+            }
+
+            if (majorVersion != null) {
+                output.majorVersion = majorVersion;
+            }
+
+            // -------------------------------------------------------- name (2)
+
+            if (output.isIE) {
+                if (majorVersion != null) {
+                    var majorVersionNumber = +majorVersion;
+                    if (majorVersionNumber <= 10 && majorVersion >= 7) {
+                        this._setFlag(output, "OldIE");
+                        this._setFlag(output, "IE" + majorVersion);
+                    /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+                    } else if (majorVersionNumber == 6) {
+                        output._isIE6 = true;
+                    /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+                    } else {
+                        this._setFlag(output, "ModernIE");
+                    }
+                }
+            }
+
+            // ------------------------------------------------ full version (2)
+
+            if (version == null && majorVersion != null) {
+                version = majorVersion;
+            }
+
+            if (version != null) {
+                output.version = version;
+            }
+
+
+
+            ////////////////////////////////////////////////////////////////////
+            // Rendering engine
+            ////////////////////////////////////////////////////////////////////
+
+            // ------------------------------------------------------------ name
+
+            var engineName = engine.name;
+
+            if (engineName != null) {
+                switch (UserAgent.normalizeName(engineName)) {
+                    case 'webkit':
+                        this._setFlag(output, "Webkit");
+                        break;
+
+                    case 'gecko':
+                        this._setFlag(output, "Gecko");
+                        break;
+                }
+            }
+
+
+
+            ////////////////////////////////////////////////////////////////////
+            // Mobile browser specific properties
+            ////////////////////////////////////////////////////////////////////
+
+            if (output.isIEMobile) {
+                var match = /(iemobile)[\/\s]?((\d+)?[\w\.]*)/ig.exec(output.ua)[0];
+
+                if (match != null && ariaUtilsArray.contains(['xblwp7', 'zunewp7'], match.toLowerCase())) {
+                    this._setFlag(output, "DesktopView");
+                } else {
+                    this._setFlag(output, "MobileView");
+                }
+            }
+
+
+
+            /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
+
+            ////////////////////////////////////////////////////////////////////
+            // Device detection
+            //
+            // Copied (and adapted) from aria.utils.Device
+            ////////////////////////////////////////////////////////////////////
+
+            var device = uaInfo.device;
+            var deviceType = device.type;
+            var result;
+
+            // -------------------------------------------------------- isTablet
+
+            result = false;
+
+            if (!result) {
+                if (deviceType != null) {
+                    result = UserAgent.normalizeName(deviceType) == "tablet";
+                }
+            }
+            if (!result) {
+                result = /(iPad|SCH-I800|GT-P1000|GT-P1000R|GT-P1000M|SGH-T849|SHW-M180S|android 3.0|xoom|NOOK|playbook|tablet|silk|kindle|GT-P7510)/i.test(output.ua);
+            }
+
+            if (result) {
+                output._isTablet = true;
+            }
+
+            // --------------------------------------------------------- isPhone
+
+            result = false;
+
+            if (!result) {
+                if (deviceType != null) {
+                    result = UserAgent.normalizeName(deviceType) == "mobile";
+                }
+            }
+            if (!result) {
+                if (!output._isTablet) {
+                    result = output.isAndroid
+                    || output.isBlackBerry
+                    || output.isIOS
+                    || output.isSymbian
+                    || output.isWindowsPhone
+                    || UserAgent.normalizeName(output.osName) == "webos"
+                    ;
+                }
+            }
+
+            if (result) {
+                output._isPhone = true;
+            }
+
+            // ------------------------------------------------------ deviceName
+
+            var parts = [
+                device.vendor,
+                device.model
+            ];
+
+            for (var index = parts.length - 1; index >= 0; index--) {
+                var part = parts[index];
+                if (part == null || part.length == null || part.length <= 0) {
+                    parts.splice(index, 1);
+                }
+            }
+
+            var deviceName = parts.join(" - ");
+
+            output._deviceName = deviceName;
+            /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+
+            ////////////////////////////////////////////////////////////////////
+            // Output
+            ////////////////////////////////////////////////////////////////////
+
+            return output;
+        },
+
+
+        /**
+         * Resets all properties to their default values.
+         */
+        _resetProperties : function() {
             this._styleCache = {};
 
             // -----------------------------------------------------------------
 
-            this.ua = userAgentWrapper.ua;
+            this.ua = null;
 
             this.name = "";
             this.version = "";
@@ -696,41 +1167,6 @@ module.exports = Aria.classDefinition({
             this._isTablet = false;
             this._deviceName = "";
             /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
-
-            return userAgentWrapper;
-        },
-
-        /**
-         * Sets the flag corresponding to the given name to the given state.
-         *
-         * Setting a flag corresponds to assigning its state value to a property whose name is built by:
-         * - capitalizing the name
-         * - prepending it with "is"
-         *
-         * If no explicit state is given, true is assumed.
-         *
-         * @param {String} name The name of the flag
-         * @param {Boolean} state The state of the flag
-         *
-         * @return {Boolean} The final state of the flag.
-         */
-        _setFlag : function(name, state) {
-            if (state == null) {
-                state = true;
-            }
-
-            var flagName = this._buildFlagName(name);
-            this[flagName] = state;
-
-            return state;
-        },
-
-        _buildFlagName : function (flag) {
-            return "is" + this._capitalize(flag);
-        },
-
-        _capitalize : function (string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
         },
 
         /**
@@ -738,372 +1174,27 @@ module.exports = Aria.classDefinition({
          *
          * If no user agent is given, current browser's one is taken.
          *
+         * Not that providing a user agent different than the running browser's one will not make all functions return values corresponding to the browser associated to this custom user agent. Feature detection mechanism for instance will by nature always correspond to the running browser.
+         *
          * @param {String} userAgent The user agent to take into account in this class
          *
          * @return {Object} The user agent wrapper used to compute the properties (see aria.core.useragent.UserAgent.getUserAgentInfo)
          */
         init : function(userAgent) {
-            ////////////////////////////////////////////////////////////////////
-            // Initialization
-            ////////////////////////////////////////////////////////////////////
+            var userAgentWrapper = UserAgent.getUserAgentInfo(userAgent);
 
-            var userAgentWrapper = this._resetProperties(userAgent);
+            // ----------------------------------------- reset /apply properties
 
-            var uaInfo = userAgentWrapper.results;
+            this._resetProperties();
 
-            var browser = uaInfo.browser;
-            var engine = uaInfo.engine;
-            var os = uaInfo.os;
-
-            // --------------------------------------- for anticipated detection
-
-            var version = null;
-
-
-
-            ////////////////////////////////////////////////////////////////////
-            // OS
-            ////////////////////////////////////////////////////////////////////
-
-            // --------------------------------------------------------- version
-
-            var osVersion = os.version;
-
-            if (osVersion != null) {
-                this.osVersion = osVersion;
-            }
-
-            // ------------------------------------------------------------ name
-
-            var osName = os.name;
-
-            if (osName == null) {
-                osName = "";
-            }
-
-            switch (UserAgent.normalizeName(osName)) {
-                case "windows":
-                    if (osVersion == " M") {
-                        // user agents with "Windows Mobile" instead of "Windows Phone" not properly recognized.
-                        this._setFlag("WindowsPhone");
-                        if (/(Windows Mobile; WCE;)/ig.test(this.ua)) {
-                            this.osVersion = "WCE";
-                        } else {
-                            this.osVersion = "";
-                        }
-                    } else {
-                        this._setFlag("Windows");
-                        this.environment = "Windows";
-                    }
-                    break;
-
-                case "macos":
-                    this._setFlag("Mac");
-                    this.environment = "MacOS";
-                    break;
-
-                case 'ios':
-                    this._setFlag("IOS");
-                    break;
-
-                case 'windowsphoneos':
-                    this._setFlag("WindowsPhone");
-                    break;
-
-                default:
-                    if (ariaUtilsArray.contains(["Android", "BlackBerry", "Symbian"], osName)) {
-                        this._setFlag(osName);
-                    } else {
-                        this._setFlag("OtherOS");
-                    }
-            }
-
-            this.osName = osName;
-
-
-
-            ////////////////////////////////////////////////////////////////////
-            // Browser
-            ////////////////////////////////////////////////////////////////////
-
-            // ------------------------------------------------------------ name
-
-            var name = browser.name;
-
-            var maybeOtherBrowser = false;
-
-            if (name != null) {
-                switch (UserAgent.normalizeName(name)) {
-                    case "mobilesafari":
-                        if (this.isAndroid) {
-                            this._setFlag("AndroidBrowser");
-                        } else if (this.isBlackBerry) {
-                            this._setFlag("BlackBerryBrowser");
-                        } else {
-                            this._setFlag("SafariMobile");
-                        }
-                        break;
-                    case "operamini":
-                        this._setFlag("OperaMini");
-                        break;
-                    case "operamobi":
-                        this._setFlag("OperaMobile");
-                        break;
-                    case "safari":
-                        if (this.isSymbian) {
-                            this._setFlag("S60");
-                        } else if (/(phantomjs)/ig.test(this.ua)) {
-                            this._setFlag("PhantomJS");
-                            name = "PhantomJS";
-                        } else {
-                            this._setFlag("Safari");
-                        }
-                        break;
-                    default:
-                        maybeOtherBrowser = true;
-                }
-
-                if (ariaUtilsArray.contains(["Firefox", "Chrome", "IE", "Opera", "IEMobile"], name)) {
-                    this._setFlag(name);
-                    maybeOtherBrowser = false;
-                }
-            } else {
-                if (this.isBlackBerry) {
-                    this._setFlag("BlackBerryBrowser");
-                    name = "BlackBerry";
-                }
-            }
-
-            if (maybeOtherBrowser) {
-                this._setFlag("OtherBrowser");
-            }
-
-            // Special case - NGBrowser
-            var match = /BrowserNG\/(\d+(?:\.\d+)*)/ig.exec(this.ua);
-            if (match != null) {
-                name = "NokiaBrowser";
-                version = match[1];
-            }
-
-            this.name = name;
-
-            // --------------------------------------- major version (detection)
-
-            var detectedMajorVersion = null;
-
-            if (this.isIE) {
-                // PTR 05207453
-                // With compatibility view, it can become tricky to
-                // detect the version.
-                // What is important to detect here is the document mode
-                // (which defines how the browser really
-                // reacts), NOT the browser mode (how the browser says
-                // it reacts, through conditional comments
-                // and ua string).
-                //
-                // In IE7 document.documentMode is undefined. For IE8+
-                // (also in document modes emulating IE7) it is defined
-                // and readonly.
-                /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
-                if (browser.major != "6") {
-                /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
-                var document = Aria.$frameworkWindow.document;
-                detectedMajorVersion = document.documentMode || 7;
-                /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
-                }
-                /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
-            }
-
-            // ---------------------------------------------------- full version
-
-            if (version == null) {
-                version = browser.version;
-            }
-
-            if (detectedMajorVersion != null) {
-                // the browser is not what it claims to be!
-                // make sure this.version is consistent with detected
-                // major version
-                version = detectedMajorVersion + ".0";
-            }
-
-            if (version == null) {
-                if (this.isPhantomJS) {
-                    if (/phantomjs[\/\s]((?:\d+\.?)+)/ig.test(this.ua)) {
-                        version = RegExp.$1;
-                    }
-                }
-            }
-
-            // ----------------------------------------------- major version (2)
-
-            var majorVersion;
-
-            if (detectedMajorVersion != null) {
-                majorVersion = detectedMajorVersion;
-            } else if (version != null) {
-                var part = /^(\d+)*/.exec(version);
-                if (part != null) {
-                    majorVersion = part[1];
-                }
-            } else if (browser.major != null) {
-                majorVersion = browser.major;
-            }
-
-            if (majorVersion != null) {
-                this.majorVersion = majorVersion;
-            }
-
-            // -------------------------------------------------------- name (2)
-
-            if (this.isIE) {
-                if (majorVersion != null) {
-                    var majorVersionNumber = +majorVersion;
-                    if (majorVersionNumber <= 10 && majorVersion >= 7) {
-                        this._setFlag("OldIE");
-                        this._setFlag("IE" + majorVersion);
-                    /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
-                    } else if (majorVersionNumber == 6) {
-                        this._isIE6 = true;
-                    /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
-                    } else {
-                        this._setFlag("ModernIE");
-                    }
-                }
-            }
-
-            // ------------------------------------------------ full version (2)
-
-            if (version == null && majorVersion != null) {
-                version = majorVersion;
-            }
-
-            if (version != null) {
-                this.version = version;
-            }
-
-
-
-            ////////////////////////////////////////////////////////////////////
-            // Rendering engine
-            ////////////////////////////////////////////////////////////////////
-
-            // ------------------------------------------------------------ name
-
-            var engineName = engine.name;
-
-            if (engineName != null) {
-                switch (UserAgent.normalizeName(engineName)) {
-                    case 'webkit':
-                        this._setFlag("Webkit");
-                        break;
-
-                    case 'gecko':
-                        this._setFlag("Gecko");
-                        break;
-                }
-            }
-
-
-
-            ////////////////////////////////////////////////////////////////////
-            // Mobile browser specific properties
-            ////////////////////////////////////////////////////////////////////
-
-            if (this.isIEMobile) {
-                var match = /(iemobile)[\/\s]?((\d+)?[\w\.]*)/ig.exec(this.ua)[0];
-
-                if (match != null && ariaUtilsArray.contains(['xblwp7', 'zunewp7'], match.toLowerCase())) {
-                    this._setFlag("DesktopView");
-                } else {
-                    this._setFlag("MobileView");
-                }
-            }
-
-
-
-            /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
-
-            ////////////////////////////////////////////////////////////////////
-            // Device detection
-            //
-            // Copied (and adapted) from aria.utils.Device
-            ////////////////////////////////////////////////////////////////////
-
-            var device = uaInfo.device;
-            var deviceType = device.type;
-            var result;
-
-            // -------------------------------------------------------- isTablet
-
-            result = false;
-
-            if (!result) {
-                if (deviceType != null) {
-                    result = UserAgent.normalizeName(deviceType) == "tablet";
-                }
-            }
-            if (!result) {
-                result = /(iPad|SCH-I800|GT-P1000|GT-P1000R|GT-P1000M|SGH-T849|SHW-M180S|android 3.0|xoom|NOOK|playbook|tablet|silk|kindle|GT-P7510)/i.test(this.ua);
-            }
-
-            if (result) {
-                this._isTablet = true;
-            }
-
-            // --------------------------------------------------------- isPhone
-
-            result = false;
-
-            if (!result) {
-                if (deviceType != null) {
-                    result = UserAgent.normalizeName(deviceType) == "mobile";
-                }
-            }
-            if (!result) {
-                if (!this._isTablet) {
-                    result = this.isAndroid
-                    || this.isBlackBerry
-                    || this.isIOS
-                    || this.isSymbian
-                    || this.isWindowsPhone
-                    || UserAgent.normalizeName(this.osName) == "webos"
-                    ;
-                }
-            }
-
-            if (result) {
-                this._isPhone = true;
-            }
-
-            // ------------------------------------------------------ deviceName
-
-            var parts = [
-                device.vendor,
-                device.model
-            ];
-
-            for (var index = parts.length - 1; index >= 0; index--) {
-                var part = parts[index];
-                if (part == null || part.length == null || part.length <= 0) {
-                    parts.splice(index, 1);
-                }
-            }
-
-            var deviceName = parts.join(" - ");
-
-            this._deviceName = deviceName;
-            /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
-
-
-
-            ////////////////////////////////////////////////////////////////////
-            // Finalization
-            ////////////////////////////////////////////////////////////////////
+            var properties = this._getProperties(userAgentWrapper);
+            this._import(properties);
 
             /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
             this.__ensureDeprecatedProperties();
             /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
+
+            // ---------------------------------------------------------- return
 
             return userAgentWrapper;
         },

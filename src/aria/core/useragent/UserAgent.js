@@ -83,7 +83,8 @@ module.exports = Aria.classDefinition({
 
             // ---------------------------------------- early termination: cache
 
-            result = this._cache[userAgent];
+            var cacheKey = userAgent.toLowerCase();
+            result = this._cache[cacheKey];
             if (result != null) {
                 return result;
             }
@@ -97,7 +98,7 @@ module.exports = Aria.classDefinition({
 
             // ----------------------------------------- finalization and return
 
-            this._cache[userAgent] = result;
+            this._cache[cacheKey] = result;
             return result;
         }
     }
