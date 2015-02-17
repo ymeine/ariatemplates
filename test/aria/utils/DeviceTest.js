@@ -142,6 +142,7 @@ Aria.classDefinition({
 
         _orientation4 : function () {
             this.assertTrue(this.eventRaised, "Different viewport size with different orientation: event should be raised");
+            this._tmpWindow.parentNode.removeChild(this._tmpWindow);
             this.notifyTestEnd("testAsyncOrientation");
         },
 

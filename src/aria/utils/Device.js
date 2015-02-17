@@ -17,6 +17,7 @@ var ariaUtilsArray = require("../utils/Array");
 var ariaCoreBrowser = require("../core/Browser");
 var UserAgent = require("../core/useragent/UserAgent");
 var ariaUtilsEvent = require("./Event");
+var ariaUtilsDom = require("./Dom");
 /* BACKWARD-COMPATIBILITY-BEGIN (deprecate Browser properties) */
 var ariaUtilsType = require("../utils/Type");
 /* BACKWARD-COMPATIBILITY-END (deprecate Browser properties) */
@@ -59,11 +60,11 @@ module.exports = Aria.classDefinition({
         /* BACKWARD-COMPATIBILITY-END (GitHub #1397) */
 
         /**
-         * Current orientation value to avoid unnecessary rechecking.
+         * Previous orientation value to check if event should be raised (value changed or not).
          * @type Boolean
          * @private
          */
-        this._isPortrait = this.isPortrait(true);
+        this._previousIsPortrait = this.isPortrait(true);
 
         /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1397) */
         this._deprecatedProperties = []; // for init to process well
@@ -494,6 +495,7 @@ module.exports = Aria.classDefinition({
                 fn : this._onResize,
                 scope : this
             });
+            this._previousIsPortrait = this.isPortrait();
             this.$JsObject.$on.apply(this, arguments);
         },
 
@@ -502,27 +504,23 @@ module.exports = Aria.classDefinition({
          * @private
          */
         _onResize : function() {
-            var isPortrait = this.isPortrait(true);
-            if (isPortrait !== this._isPortrait) {
+            var isPortrait = this.isPortrait();
+            if (isPortrait !== this._previousIsPortrait) {
                 this.$raiseEvent({
                     name : "orientationchange",
                     isPortrait : isPortrait
                 });
-                this._isPortrait = isPortrait;
+                this._previousIsPortrait = isPortrait;
             }
         },
 
         /**
-         * Checks whether the device's orientation is portrait.
-         *
-         * @param {Boolean} forceCheck If true, forces rechecking instead of returning current orientation
-         *
-         * @return {Boolean} <em>true</em> if so, <em>false</em> otherwise
+         * Returns <em>true</em> if the device's orientation is portrait, <em>false</em> if it is landscape.
+         * @return {Boolean}
          */
-        isPortrait : function (forceCheck) {
-            if (forceCheck) return Aria.$window.innerHeight > Aria.$window.innerWidth;
-
-            return this._isPortrait;
+        isPortrait : function () {
+            var dim = ariaUtilsDom.getViewportSize();
+            return dim.height > dim.width;
         },
 
         /**
