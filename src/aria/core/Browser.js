@@ -1000,12 +1000,16 @@ module.exports = Aria.classDefinition({
             ////////////////////////////////////////////////////////////////////
 
             if (output.isIEMobile) {
-                var match = /(iemobile)[\/\s]?((\d+)?[\w\.]*)/ig.exec(output.ua)[0];
+                var fullMatch = /(iemobile)[\/\s]?((\d+)?[\w\.]*)/ig.exec(output.ua);
 
-                if (match != null && ariaUtilsArray.contains(['xblwp7', 'zunewp7'], match.toLowerCase())) {
-                    this._setFlag(output, "DesktopView");
-                } else {
-                    this._setFlag(output, "MobileView");
+                if (fullMatch != null) {
+                    var match = fullMatch[0];
+
+                    if (match != null && ariaUtilsArray.contains(['xblwp7', 'zunewp7'], match.toLowerCase())) {
+                        this._setFlag(output, "DesktopView");
+                    } else {
+                        this._setFlag(output, "MobileView");
+                    }
                 }
             }
 
