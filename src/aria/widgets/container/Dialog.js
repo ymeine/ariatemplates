@@ -133,7 +133,11 @@ module.exports = Aria.classDefinition({
         this._cfg.heightMaximized = null;
     },
     $destructor : function () {
+        if (this._popup) {
+            this._popup.$unregisterListeners(this);
+        }
         this.close();
+
         this.$Container.$destructor.call(this);
     },
     $statics : {
