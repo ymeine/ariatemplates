@@ -804,7 +804,7 @@ module.exports = Aria.classDefinition({
          * can be closed
          * @param {aria.DomEvent} domEvent event that triggered the closing of the popup
          */
-        close : function (domEvent) {
+        close : function (domEvent, source) {
             if (this.isOpen) {
                 var event = {
                     name : "onBeforeClose",
@@ -818,11 +818,14 @@ module.exports = Aria.classDefinition({
                     // Notify the popup manager this popup was closed
                     ariaPopupsPopupManager.onPopupClose(this);
                     if (!this.conf.animateOut) {
-                        this._onAfterClose();
+                        this._onAfterClose([source]);
                     } else {
                         this._getAnimator().$onOnce({
-                            "animationend" : this._onAfterClose,
-                            scope : this
+                            "animationend" : {
+                                fn: this._onAfterClose,
+                                args: [source]
+                            },
+                            scope : this,
                         });
                     }
                 }
@@ -833,16 +836,38 @@ module.exports = Aria.classDefinition({
          * Delayed events thrower: open
          * @protected
          */
-        _onAfterOpen : function () {
-            this.$raiseEvent("onAfterOpen");
+        _onAfterOpen : function (args) {
+            var source = args[0];
+
+            if (source == null) {
+                source = {};
+            }
+
+            var newArguments = [source];
+
+            this.$raiseEvent({
+                name: "onAfterOpen",
+                arguments: newArguments
+            });
         },
 
         /**
          * Delayed events thrower : close
          * @protected
          */
-        _onAfterClose : function () {
-            this.$raiseEvent("onAfterClose");
+        _onAfterClose : function (args) {
+            var source = args[0];
+
+            if (source == null) {
+                source = {};
+            }
+
+            var newArguments = [source];
+
+            this.$raiseEvent({
+                name: "onAfterClose",
+                arguments: newArguments
+            });
         },
 
         /**
@@ -956,7 +981,7 @@ module.exports = Aria.classDefinition({
          * @param {aria.popups.Beans:PopupConf} conf Configuration object. See aria.popups.Beans.PopupCfg bean
          * documentation
          */
-        open : function (conf) {
+        open : function (conf, source) {
             if (!this.isOpen) {
                 this._applyConfig(conf);
                 this.$raiseEvent("onBeforeOpen");
@@ -965,10 +990,13 @@ module.exports = Aria.classDefinition({
                 ariaPopupsPopupManager.onPopupOpen(this);
                 this.refreshProcessingIndicators();
                 if (!this.conf.animateIn) {
-                    this._onAfterOpen();
+                    this._onAfterOpen([source]);
                 } else {
                     this._getAnimator().$onOnce({
-                        "animationend" : this._onAfterOpen,
+                        "animationend" : {
+                            fn: this._onAfterOpen,
+                            args: [source]
+                        },
                         scope : this
                     });
                 }

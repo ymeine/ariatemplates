@@ -133,10 +133,9 @@ module.exports = Aria.classDefinition({
         this._cfg.heightMaximized = null;
     },
     $destructor : function () {
-        if (this._popup) {
-            this._popup.$unregisterListeners(this);
-        }
-        this.close();
+        this.close({
+            destructor: true
+        });
 
         this.$Container.$destructor.call(this);
     },
@@ -374,7 +373,7 @@ module.exports = Aria.classDefinition({
          */
         _init : function () {
             if (this.getProperty("visible") && this._cfgOk) {
-                this.open();
+                this.open({initialization: true});
             }
         },
 
@@ -392,9 +391,9 @@ module.exports = Aria.classDefinition({
             if (propertyName === "visible") {
                 this._cfg.visible = newValue;
                 if (newValue) {
-                    this.open();
+                    this.open({binding: true});
                 } else {
-                    this.close();
+                    this.close({binding: true});
                 }
             } else if (propertyName === "movable") {
                 this._cfg.movable = newValue;
@@ -414,7 +413,7 @@ module.exports = Aria.classDefinition({
                 this._cfg.macro = newValue;
                 if (this._popup) {
                     if (!this._popup.isOpen) {
-                        this.open();
+                        this.open({binding: true});
                     } else {
                         var args = {
                             section : "__dialogContent_" + this._domId,
@@ -521,7 +520,7 @@ module.exports = Aria.classDefinition({
         /**
          * Creates and displays the popup.
          */
-        open : function () {
+        open : function (source) {
             var cfg = this._cfg;
             var refreshParams = {
                 section : "__dialog_" + this._domId,
@@ -562,7 +561,7 @@ module.exports = Aria.classDefinition({
                 closeOnMouseClick : cfg.closeOnMouseClick,
                 closeOnMouseScroll : false,
                 parentDialog : this
-            });
+            }, source);
 
             // must be registered before we check for _cfg.maximized, to fire the event correctly after overflow change
             ariaTemplatesLayout.$on({
@@ -580,7 +579,7 @@ module.exports = Aria.classDefinition({
         /**
          * Is called right after the popup is displayed.
          */
-        _onAfterPopupOpen : function () {
+        _onAfterPopupOpen : function (event) {
             var cfg = this._cfg;
             var getDomElementChild = ariaUtilsDom.getDomElementChild;
             this._domElt = this._popup.domElement;
@@ -593,7 +592,7 @@ module.exports = Aria.classDefinition({
 
             ariaCoreTimer.addCallback({
                 fn : function () {
-                    this.evalCallback(cfg.onOpen);
+                    this.evalCallback(cfg.onOpen, event.arguments);
                 },
                 scope : this,
                 delay : 4
@@ -658,7 +657,7 @@ module.exports = Aria.classDefinition({
         /**
          * Hides and destroys the dialog
          */
-        close : function () {
+        close : function (source) {
             var cfg = this._cfg;
             if (this._popup) {
 
@@ -679,7 +678,7 @@ module.exports = Aria.classDefinition({
                     ariaUtilsDelegate.remove(this._maximizeDelegateId);
                 }
 
-                this._popup.close();
+                this._popup.close(undefined, source);
                 this._popup.$unregisterListeners(this);
                 this._popup.$dispose();
                 this._popup = null;
@@ -694,8 +693,8 @@ module.exports = Aria.classDefinition({
         /**
          * Is called when the popup has been closed.
          */
-        _onAfterPopupClose : function () {
-            this.evalCallback(this._cfg.onClose);
+        _onAfterPopupClose : function (event) {
+            this.evalCallback(this._cfg.onClose, event.arguments);
         },
 
         /**
@@ -1032,8 +1031,8 @@ module.exports = Aria.classDefinition({
             this._calculateSize();
             this.setProperty("center", false);
             if (this._popup) {
-                this.close();
-                this.open();
+                this.close({resize: true});
+                this.open({resize: true});
                 this._popup.refreshProcessingIndicators();
             }
             this.evalCallback(this._cfg.resizeend);
