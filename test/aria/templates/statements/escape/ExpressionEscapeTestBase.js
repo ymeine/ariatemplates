@@ -21,7 +21,7 @@ Aria.classDefinition({
     $dependencies: ["aria.utils.String", "aria.utils.Type"],
 
     $constructor: function() {
-        this.$TemplateTestCase.constructor.call(this, arguments);
+        this.$TemplateTestCase.constructor.apply(this, arguments);
 
         // ---------------------------------------------------------------------
 

@@ -218,13 +218,13 @@ module.exports = Aria.classDefinition({
          * @param {Array} bindings List of bindings
          */
         _initBindings : function (bindings) {
-            var bnd, inside, to, bindValue, transform;
-            for (var bindedProperty in bindings) {
-                if (bindings.hasOwnProperty(bindedProperty)) {
-                    bnd = bindings[bindedProperty];
-                    inside = bnd.inside;
-                    to = bnd.to;
-                    transform = bnd.transform;
+            var binding, inside, to, bindValue, transform;
+            for (var boundProperty in bindings) {
+                if (bindings.hasOwnProperty(boundProperty)) {
+                    binding = bindings[boundProperty];
+                    inside = binding.inside;
+                    to = binding.to;
+                    transform = binding.transform;
                     if (inside && (to || to === 0)) {
                         // there is binding
                         bindValue = inside[to];
@@ -243,11 +243,11 @@ module.exports = Aria.classDefinition({
                                 }
                             }
                             // set the computed value, to preserve configuration
-                            this._cfg[bindedProperty] = bindValue;
+                            this._cfg[boundProperty] = bindValue;
                         } else {
                             // If the property is explicitly set, transfer to data model
-                            if (typeof(this._cfg[bindedProperty]) != "undefined") {
-                                var valueToDataModel = this._transform(transform, this._cfg[bindedProperty], "fromWidget");
+                            if (typeof(this._cfg[boundProperty]) != "undefined") {
+                                var valueToDataModel = this._transform(transform, this._cfg[boundProperty], "fromWidget");
                                 ariaUtilsJson.setValue(inside, to, valueToDataModel);
                             }
                         }
@@ -642,7 +642,8 @@ module.exports = Aria.classDefinition({
             }
 
             // retrieve binding configuration
-            var bnd = this._cfg.bind[propertyName], newValue = this._transform(bnd.transform, bnd.inside[bnd.to], "toWidget");
+            var binding = this._cfg.bind[propertyName];
+            var newValue = this._transform(binding.transform, binding.inside[binding.to], "toWidget");
 
             // retrieve new value in datamodel, and convert it to have new value for this widget
 

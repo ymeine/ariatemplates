@@ -88,8 +88,8 @@ module.exports = Aria.classDefinition({
         },
 
         _registerSingleProperty : function (property) {
-            var bindings = this._cfg.bind, bind = bindings[property], jsonUtils = ariaUtilsJson;
-            if (bind) {
+            var bindings = this._cfg.bind, binding = bindings[property], jsonUtils = ariaUtilsJson;
+            if (binding) {
                 var callback = {
                     fn : this._notifyDataChange,
                     scope : this,
@@ -97,16 +97,16 @@ module.exports = Aria.classDefinition({
                 };
 
                 try {
-                    jsonUtils.addListener(bind.inside, bind.to, callback, true);
+                    jsonUtils.addListener(binding.inside, binding.to, callback, true);
 
                     this._bindingListeners[property] = {
-                        inside : bind.inside,
-                        to : bind.to,
-                        transform : bind.transform,
+                        inside : binding.inside,
+                        to : binding.to,
+                        transform : binding.transform,
                         cb : callback
                     };
 
-                    var newValue = this._transform(bind.transform, bind.inside[bind.to], "toWidget");
+                    var newValue = this._transform(binding.transform, binding.inside[binding.to], "toWidget");
                     this.setWidgetProperty(property, newValue);
                 } catch (ex) {
                     this.$logError(this.INVALID_BEAN, [property, "bind"]);
