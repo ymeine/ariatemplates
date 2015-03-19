@@ -15,8 +15,185 @@
 var Aria = require("../../Aria");
 var ariaWidgetsControllersReportsControllerReport = require("./reports/ControllerReport");
 var ariaUtilsType = require("../../utils/Type");
+var ariaUtilsArray = require("../../utils/Array");
 var ariaWidgetsWidgetsRes = require("../../$resources").file(__dirname, "../WidgetsRes");
 var ariaWidgetsSettings = require("../environment/WidgetSettings");
+
+
+
+
+
+/**
+ * Iterates over the properties of the given object's properties and calls the provided callback with these properties information.
+ *
+ * <p>
+ * The callback is called with the following parameters:
+ * <ul>
+ *   <li>the current property's key</li>
+ *   <li>the current property's value</li>
+ *   <li>the given object</li>
+ * </ul>
+ * </p>
+ *
+ * @param {Object} object The object to iterate over
+ * @param {Function} callback The function to be called for each property with the described parameters
+ * @param {Object} thisArg The value to use for <em>this</em> for the callback call
+ *
+ * @return {Object} the given object
+ */
+function forEachKey(object, callback, thisArg) {
+    for (var key in object) {
+        if (object.hasOwnProperty(key)) {
+            callback.call(thisArg, key, object[key], object);
+        }
+    }
+
+    return object;
+}
+
+/**
+ * An enhanced version of the for each for sequences. Loops over the values of the sequence and calls the provided callback with the current iteration's information.
+ *
+ * <p>
+ * The callback is called with the following parameters:
+ * <ul>
+ *   <li>the current iteration's value</li>
+ *   <li>the current iteration's index</li>
+ *   <li>the given sequence</li>
+ *   <li>an object used to control the loop's flow. It contains a boolean property named <em>break</em>, which can be set to <em>false</em> in order to break out from the loop.</li>
+ * </ul>
+ * </p>
+ *
+ * @param {Object} sequence The sequence to iterate over
+ * @param {Function} callback The function to be called for each property with the described parameters
+ * @param {Object} thisArg The value to use for <em>this</em> for the callback call
+ *
+ * @return {Object} the given sequence
+ */
+function forEach(sequence, callback, thisArg) {
+    var flow = {
+        "break": false
+    };
+
+    for (var index = 0, length = sequence.length; index < length; index++) {
+        callback.call(this, sequence[index], index, sequence, flow);
+        if (flow["break"]) {
+            break;
+        }
+    }
+
+    return sequence;
+}
+
+
+
+/**
+ * A configuration handler for default error messages.
+ *
+ * <p>
+ * It has one important method that should be used externally: <em>getErrorMessage</em>. It will return the default message as specified by this configuration handler (and according to the given input). Other methods are facilities which handle common use cases, and are used by the default implementation of the class.
+ * </p>
+ *
+ * @param {Object} methods The methods to be set on the instance object, used for specialization.
+ */
+function ErrorMessageGetter(methods) {
+    forEachKey(methods, function(name, method) {
+        this[name] = method;
+    }, this);
+}
+ErrorMessageGetter.prototype = {};
+/**
+ * Returns the error message corresponding to the given name and for the specified widget.
+ *
+ * <p>
+ * The context object carries the following data:
+ * <code>
+ * {
+ *  errorMessageName // {String} The name of the error message to get
+ *  widgetName // {String} The name of the widget for which to get the error message
+ *  controller // The controller from which the configuration is looked up
+ * }
+ * </code>
+ * </p>
+ *
+ * @param context A context object carrying data that can be useful for the implementation
+ *
+ * @return {String} The error message if any was found, a void value otherwise.
+ */
+ErrorMessageGetter.prototype.getErrorMessage = function (context) {
+    var errorMessage;
+
+    var defaultErrorMessages = this.getWidgetErrorMessages(context);
+    if (defaultErrorMessages != null) {
+        errorMessage = defaultErrorMessages[context.errorMessageName];
+    }
+
+    return errorMessage;
+};
+/**
+ * Returns all the error messages for the specified widget.
+ *
+ * <p>
+ * The context object is the same as defined for method <em>getErrorMessage</em>.
+ * </p>
+ *
+ * @param context A context object carrying data that can be useful for the implementation
+ *
+ * @return {Object} The error messages if found, a void value otherwise.
+ */
+ErrorMessageGetter.prototype.getWidgetErrorMessages = function (context) {
+    var allErrorMessages = this.getAllErrorMessages(context);
+    return allErrorMessages[context.widgetName];
+};
+/**
+ * Is expected to return the map of error messages per widget.
+ *
+ * <p>
+ * If no other method is overridden, this one must be implemented, since default implementation of the class uses it.
+ * </p>
+ * <p>
+ * The context object is the same as defined for method <em>getErrorMessage</em>.
+ * </p>
+ *
+ * @param context A context object carrying data that can be useful for the implementation
+ *
+ * @return {Object} A map of error messages per widget.
+ */
+ErrorMessageGetter.prototype.getAllErrorMessages = function (context) {};
+
+
+
+
+
+// error messages configurations specifications --------------------------------
+
+var defaultErrorMessagesConfigurations = [
+    // widget internal configuration -------------------------------------------
+    {
+        getWidgetErrorMessages : function (context) {
+            return context.controller._defaultErrorMessages;
+        }
+    },
+    // widgets global configuration --------------------------------------------
+    {
+        getAllErrorMessages : function () {
+            var widgetsSettings = ariaWidgetsSettings.getWidgetSettings();
+
+            return widgetsSettings["defaultErrorMessages"];
+        }
+    },
+    // hardcoded defaults ------------------------------------------------------
+    {
+        getAllErrorMessages : function (context) {
+            return context.controller.res.errors;
+        }
+    }
+];
+
+forEach(defaultErrorMessagesConfigurations, function(spec, index, configurations) {
+    configurations[index] = new ErrorMessageGetter(spec);
+});
+
 
 
 
@@ -295,61 +472,22 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
-            // configurations settings -----------------------------------------
-
+            var configurations = defaultErrorMessagesConfigurations;
             var widgetName = this._widgetName;
 
-            var configurations = [
-                // widget internal configuration -------------------------------
-                {
-                    getDefaultErrorMessages : function () {
-                        return this._defaultErrorMessages;
-                    }
-                },
-                // widgets global configuration --------------------------------
-                {
-                    getWidgetsDefaultErrorMessages : function () {
-                        var widgetsSettings = ariaWidgetsSettings.getWidgetSettings();
-
-                        return widgetsSettings["defaultErrorMessages"];
-                    }
-                },
-                // hardcoded defaults ------------------------------------------
-                {
-                    getWidgetsDefaultErrorMessages : function () {
-                        return this.res.errors;
-                    }
-                }
-            ];
-
-            // configurations lookup -------------------------------------------
+            var context = {
+                widgetName: widgetName,
+                errorMessageName: errorMessageName,
+                controller: this
+            };
 
             var errorMessage;
-            var defaultErrorMessages;
-
-            var index = 0;
-            var length = configurations.length;
-            var configuration;
-            while (errorMessage == null && index < length) {
-                configuration = configurations[index];
-
-                var getDefaultErrorMessages = configuration.getDefaultErrorMessages;
-
-                if (getDefaultErrorMessages == null) {
-                    getDefaultErrorMessages = function () {
-                        var widgetsDefaultErrorMessages = configuration.getWidgetsDefaultErrorMessages.call(this);
-                        return widgetsDefaultErrorMessages[widgetName];
-                    };
+            forEach(configurations, function(configuration, index, configurations, flow) {
+                errorMessage = configuration.getErrorMessage(context);
+                if (errorMessage != null) {
+                    flow["break"] = true;
                 }
-
-                defaultErrorMessages = getDefaultErrorMessages.call(this);
-
-                if (defaultErrorMessages != null) {
-                    errorMessage = defaultErrorMessages[errorMessageName];
-                }
-
-                index++;
-            }
+            }, this);
 
             // ---------------------------------------------------------- return
 
