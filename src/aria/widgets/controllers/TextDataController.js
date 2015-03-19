@@ -167,6 +167,32 @@ ErrorMessageGetter.prototype.getAllErrorMessages = function (context) {};
 
 // error messages configurations specifications --------------------------------
 
+/* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1428) */
+var newKeysToOldKeysMap  = {
+    "NumberField" : {
+        "validation" : "40006"
+    },
+    "TimeField" : {
+        "validation" : "40007"
+    },
+    "DateField" : {
+        "validation" : "40008",
+        "minValue" : "40018",
+        "maxValue" : "40019"
+    },
+    "AutoComplete" : {
+        "validation" : "40020"
+    }
+};
+
+forEachKey(newKeysToOldKeysMap, function(widget, messages) {
+    forEachKey(messages, function(message, code, messages) {
+        var key = [code, "widget", widget, message].join("_").toUpperCase();
+        messages[message] = key;
+    });
+});
+/* BACKWARD-COMPATIBILITY-END (GitHub #1428) */
+
 var defaultErrorMessagesConfigurations = [
     // widget internal configuration -------------------------------------------
     {
@@ -187,6 +213,18 @@ var defaultErrorMessagesConfigurations = [
         getAllErrorMessages : function (context) {
             return context.controller.res.errors;
         }
+        /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1428) */
+        ,
+        getErrorMessage : function (context) {
+            var map = newKeysToOldKeysMap;
+            var store = context.controller.res.errors;
+            var actualKey = map[context.widgetName][context.errorMessageName];
+
+            var value = store[actualKey];
+
+            return value;
+        }
+        /* BACKWARD-COMPATIBILITY-END (GitHub #1428) */
     }
 ];
 
@@ -225,6 +263,10 @@ module.exports = Aria.classDefinition({
         };
 
         this.setDefaultErrorMessages();
+
+        /* BACKWARD-COMPATIBILITY-BEGIN (GitHub #1428) */
+        this._newKeysToOldKeysMap = newKeysToOldKeysMap
+        /* BACKWARD-COMPATIBILITY-END (GitHub #1428) */
     },
     $prototype : {
 
