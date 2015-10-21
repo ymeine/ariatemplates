@@ -16,6 +16,7 @@ var Aria = require("../Aria");
 var ariaPopupsPopupManager = require("./PopupManager");
 require("./Beans");
 var ariaUtilsDom = require("../utils/Dom");
+var ariaUtilsString = require("../utils/String");
 var ariaUtilsSize = require("../utils/Size");
 var ariaUtilsEvent = require("../utils/Event");
 var ariaUtilsDelegate = require("../utils/Delegate");
@@ -320,10 +321,21 @@ module.exports = Aria.classDefinition({
                  ariaUtilsDelegate.getMarkup(this._delegateId),
                  ' style="position:absolute;top:-15000px;left:-15000px;visibility:hidden;display:block;"'
             ];
-            var role = cfg.role;
-            if (cfg.waiAria && role) {
-                html.push(' role="' + role + '"');
+
+            if (cfg.waiAria) {
+                var role = cfg.role;
+                if (role) {
+                    role = ariaUtilsString.escapeForHTML(role, {attr: true});
+                    html.push(' role="' + role + '"');
+                }
+
+                var labelId = cfg.labelId;
+                if (labelId) {
+                    labelId = ariaUtilsString.escapeForHTML(labelId, {attr: true});
+                    html.push(' aria-labelledby="' + labelId + '"');
+                }
             }
+
             html.push("></div>");
             div.innerHTML = html.join('');
 
