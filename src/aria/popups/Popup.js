@@ -320,10 +320,21 @@ module.exports = Aria.classDefinition({
                  ariaUtilsDelegate.getMarkup(this._delegateId),
                  ' style="position:absolute;top:-15000px;left:-15000px;visibility:hidden;display:block;"'
             ];
-            var role = cfg.role;
-            if (cfg.waiAria && role) {
-                html.push(' role="' + role + '"');
+
+            var waiAria = cfg.waiAria;
+
+            if (waiAria) {
+                var role = cfg.role;
+                if (role) {
+                    html.push(' role="' + role + '"');
+                }
+
+                var labelId = cfg.labelId;
+                if (labelId) {
+                    html.push(' aria-labelledby="' + labelId + '"');
+                }
             }
+
             html.push("></div>");
             div.innerHTML = html.join('');
 
