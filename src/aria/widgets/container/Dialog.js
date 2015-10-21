@@ -259,6 +259,17 @@ module.exports = Aria.classDefinition({
             out.write('</span>');
         },
 
+        __getLabelId : function () {
+            var id = this.__labelId;
+
+            if (!id) {
+                id = this._createDynamicId();
+                this.__labelId = id;
+            }
+
+            return id;
+        },
+
         /**
          * Method called when the dialog is not used as a container
          * @param {aria.templates.MarkupWriter} out the writer Object to use to output markup
@@ -332,7 +343,12 @@ module.exports = Aria.classDefinition({
                 }
             }
 
+            // title bar (begin) -----------------------------------------------
+
             out.write(['<div class="xDialog_titleBar x', this._skinnableClass, '_', cfg.sclass, '_titleBar">'].join(''));
+
+            // title bar > icon ------------------------------------------------
+
             if (cfg.icon) {
                 out.write(['<span class="xDialog_icon x', this._skinnableClass, '_', cfg.sclass, '_icon">'].join(''));
                 var icon = new ariaWidgetsIcon({
@@ -342,8 +358,29 @@ module.exports = Aria.classDefinition({
                 icon.writeMarkup(out);
                 out.write('</span>');
             }
-            out.write(['<span class="x', this._skinnableClass, '_title x', this._skinnableClass, '_', cfg.sclass,
-                    '_title">', ariaUtilsString.escapeHTML(cfg.title), '</span>'].join(''));
+
+            // title bar > title -----------------------------------------------
+
+            var titleMarkup = [];
+            titleMarkup.push(
+                '<span'
+            );
+            if (cfg.waiAria) {
+                titleMarkup.push(' id="', this.__getLabelId(), '"');
+            }
+            titleMarkup.push(
+                    ' class="',
+                        'x', this._skinnableClass, '_title',
+                        ' x', this._skinnableClass, '_', cfg.sclass, '_title',
+                    '"',
+                '>',
+                    ariaUtilsString.escapeHTML(cfg.title),
+                '</span>'
+            );
+            titleMarkup = titleMarkup.join('');
+            out.write(titleMarkup);
+
+            // title bar > close button ----------------------------------------
 
             // buttons are floated to the right, so close should be first in the markup
             if (cfg.closable) {
@@ -353,6 +390,9 @@ module.exports = Aria.classDefinition({
                 });
                 this.__writeTitlebarButton(out, this._closeDelegateId, "close", "closeIcon");
             }
+
+            // title bar > maximize button -------------------------------------
+
             if (cfg.maximizable) {
                 this._maximizeDelegateId = ariaUtilsDelegate.add({
                     fn : this._onMaximizeBtnEvent,
@@ -360,8 +400,10 @@ module.exports = Aria.classDefinition({
                 });
                 this.__writeTitlebarButton(out, this._maximizeDelegateId, "maximize", "maximizeIcon");
             }
-            out.write("</div>");
 
+            // title bar (end) -------------------------------------------------
+
+            out.write("</div>");
         },
 
         /**
@@ -580,6 +622,7 @@ module.exports = Aria.classDefinition({
                 parentDialog : this,
                 zIndexKeepOpenOrder : false, // allows to re-order dialogs (dynamic z-index)
                 role: isModal ? "dialog" : null,
+                labelId: isModal ? this.__getLabelId() : null,
                 waiAria: cfg.waiAria
             });
 
