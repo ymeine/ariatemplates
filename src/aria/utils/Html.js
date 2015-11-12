@@ -14,6 +14,7 @@
  */
 var Aria = require("../Aria");
 var ariaTemplatesDomElementWrapper = require("../templates/DomElementWrapper");
+var ariaUtilsType = require("./Type");
 var ariaUtilsString = require("./String");
 var ariaUtilsJson = require("./Json");
 var ariaCoreJsObject = require("../core/JsObject");
@@ -181,6 +182,82 @@ module.exports = Aria.classDefinition({
                     }
                 }
             }
+        },
+
+
+
+        _propertiesListToString : function (properties, joinParts, joinKeyValue) {
+            // ---------------------------------- input arguments processing
+
+            if (!ariaUtilsType.isArray(properties)) {
+                properties = [properties];
+            }
+
+            // -------------------------------------------------- processing
+
+            var parts = [];
+
+            for (var index = 0, length = properties.length; index < length; index++) {
+                var property = properties[index];
+
+                var part;
+                if (ariaUtilsType.isString(property)) {
+                    part = property;
+                } else {
+                    var key;
+                    var value;
+
+                    if (ariaUtilsType.isArray(property)) {
+                        key = property[0];
+                        value = property[1];
+                    } else {
+                        key = property.key;
+                        value = property.value;
+                    }
+
+                    part = joinKeyValue(key, value);
+                }
+
+                parts.push(part);
+            }
+
+            var string = joinParts(parts);
+
+            // ------------------------------------------------------ return
+
+            return string;
+        },
+
+        classesListToString : function (classes) {
+            if (!ariaUtilsType.isArray(classes)) {
+                classes = [classes];
+            }
+
+            return classes.join(' ');
+        },
+
+        attributesListToString : function (attributes) {
+            var self = this;
+
+            return this._propertiesListToString(attributes, function (parts) {
+                return parts.join(' ');
+            }, function (key, value) {
+                if (key == 'class') {
+                    value = self.classesListToString(value);
+                } else if (key == 'style') {
+                    value = self.styleDeclarationsListToString(value);
+                }
+
+                return '' + key + '=' + '"' + value + '"';
+            });
+        },
+
+        styleDeclarationsListToString : function (declarations) {
+            return this._propertiesListToString(declarations, function (parts) {
+                return parts.join('; ');
+            }, function (key, value) {
+                return '' + key + ': ' + value;
+            });
         }
     }
 });
