@@ -770,13 +770,21 @@ module.exports = Aria.classDefinition({
             var getDomElementChild = ariaUtilsDom.getDomElementChild;
             this._domElt = this._popup.domElement;
             var titleBarDomElt = this._titleBarDomElt = getDomElementChild(this._domElt, 0, true);
-            this._titleDomElt = getDomElementChild(titleBarDomElt, cfg.icon ? 1 : 0);
+            var titleDomElt = getDomElementChild(titleBarDomElt, cfg.icon ? 1 : 0);
+            this._titleDomElt = titleDomElt;
             this._onDimensionsChanged();
 
             this._calculatePosition();
 
             if (cfg.modal) {
-                ariaTemplatesNavigationManager.focusFirst(this._domElt);
+                var focused = ariaTemplatesNavigationManager.focusFirst(this._domElt);
+
+                if (!focused) {
+                    titleBarDomElt.tabIndex = 0;
+                    titleBarDomElt.focus();
+                } else {
+                    titleBarDomElt.tabIndex = -1;
+                }
             }
 
             ariaCoreTimer.addCallback({
