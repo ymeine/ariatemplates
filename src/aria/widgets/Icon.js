@@ -75,35 +75,98 @@ module.exports = Aria.classDefinition({
          * @param {aria.templates.MarkupWriter} out the html output writer
          */
         _widgetMarkup : function (out) {
+            // --------------------------------------------------- destructuring
+
             var cfg = this._cfg;
-            var id = this._domId;
+            var icon = cfg.icon;
             var tooltip = cfg.tooltip;
+            var label = cfg.label;
+            var waiAria = cfg.waiAria;
+
+            var id = this._domId;
             var iconInfo = this._iconInfo;
+            var extraAttributes = this.extraAttributes;
+
+            // ------------------------------------------------------ processing
+
+            // tooltip ---------------------------------------------------------
 
             if (tooltip != null && tooltip !== '') {
-                tooltip = 'title="' + tooltip + '" ';
+                tooltip = 'title="' + tooltip + '"';
             } else {
                 tooltip = '';
             }
 
-            var delegationMarkup = "";
+            // delegationMarkup ------------------------------------------------
+
             var delegateManager = aria.utils.Delegate;
-            if (!this._delegateId) {
-                this._delegateId = delegateManager.add({
+            var delegateId = this._delegateId;
+
+            if (!delegateId) {
+                delegateId = delegateManager.add({
                     fn : this.delegate,
                     scope : this
                 });
+                this._delegateId = delegateId;
             }
-            delegationMarkup = delegateManager.getMarkup(this._delegateId) + " ";
 
-            if (!iconInfo.spriteURL && cfg.icon) {
-                var classes = aria.widgets.AriaSkinInterface.getSkinObject("Icon", cfg.icon.split(":")[0], true).content[cfg.icon.split(":")[1]];
-                out.write(['<span id="', id, '" class="xWidget ', classes, '" ', this.extraAttributes, '></span>'].join(''));
-            } else {
-                out.write(['<span id="', id, '" class="', this._getIconClasses(iconInfo), '" ', tooltip,
-                        delegationMarkup, 'style="', this._getIconStyle(iconInfo), '" ', this.extraAttributes,
-                        '></span>'].join(''));
+            var delegationMarkup = delegateManager.getMarkup(delegateId);
+
+            // icon ------------------------------------------------------------
+
+            var attributes = [];
+
+            attributes.push(
+                'id="' + id + '"'
+            );
+
+            if (waiAria) {
+                attributes.push(
+                    'tabindex="0"'
+                );
             }
+
+            var style = [];
+            // style.push('outline-width: initial');
+
+            if (!iconInfo.spriteURL && icon) {
+                var parts = icon.split(":");
+                var skinclass = parts[0];
+                var contentKey = parts[1];
+
+                var classes = aria.widgets.AriaSkinInterface.getSkinObject("Icon", skinclass, true).content[contentKey];
+
+                attributes.push(
+                    'class="' + ['xWidget'].concat(classes).join(' ') + '"'
+                );
+            } else {
+                attributes.push(
+                    'class="' + this._getIconClasses(iconInfo) + '"',
+                    tooltip,
+                    delegationMarkup
+                );
+
+                style.push(this._getIconStyle(iconInfo));
+            }
+
+            if (waiAria) {
+                if (label) {
+                    attributes.push(
+                        'aria-label="' + label + '"'
+                    );
+                }
+            }
+
+            attributes.push(
+                'style="' + style.join('; ') + '"',
+                extraAttributes
+            );
+
+            var markup = '<span ' + attributes.join(' ') + '></span>';
+
+            // ---------------------------------------------------------- output
+
+            out.write(markup);
         },
 
         /**
