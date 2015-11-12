@@ -98,6 +98,11 @@ module.exports = Aria.beanDefinitions({
                     $description : "The tab index of the widget. If null it's not taken into account, if 0 or above the widget will be focusable thorugh tab, if negative it won't be focusable.",
                     $default : null
                 },
+                "role" : {
+                    $type : "json:String",
+                    $description : "The role (attribute) to give to the widget.",
+                    $default : null
+                },
                 "waiAria" : {
                     $type : "json:Boolean",
                     $description : "If true, and if the widget supports it, accessibility-related DOM attributes are enabled on this widget, to comply with WAI-ARIA specifications. This allows screen readers and other accessibility tools to work better."
@@ -1353,6 +1358,10 @@ module.exports = Aria.beanDefinitions({
                 "onclick" : {
                     $type : "common:Callback",
                     $description : "Function to be called when the user clicks on the icon."
+                },
+                "label" : {
+                    $type : "json:String",
+                    $description : "The label to use for the icon (used for accessibility only)."
                 },
                 "sourceImage" : {
                     $type : "json:Object",
