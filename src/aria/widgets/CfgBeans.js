@@ -1354,6 +1354,10 @@ module.exports = Aria.beanDefinitions({
                     $type : "common:Callback",
                     $description : "Function to be called when the user clicks on the icon."
                 },
+                "label" : {
+                    $type : "json:String",
+                    $description : "The label to use for the icon (used for accessibility only)."
+                },
                 "sourceImage" : {
                     $type : "json:Object",
                     $description : "Configuration for custom image",
@@ -1374,6 +1378,11 @@ module.exports = Aria.beanDefinitions({
                             $default : 16
                         }
                     }
+                },
+                "role" : {
+                    $type : "json:String",
+                    $description : "The role (attribute) to give to the widget (only used when waiAria is true).",
+                    $default : null
                 }
             }
         },
