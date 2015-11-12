@@ -140,10 +140,17 @@ module.exports = Aria.classDefinition({
         this._cfg.heightMaximized = null;
 
         /**
+
          * Holds the list of elements that are made hidden when opening a modal dialog. This should not contain already previously hidden elements, and this should be empty for both closed or non-modal dialogs.
          * @type Array
          */
         this._hiddenElements = [];
+
+        /*
+         * The element that was previously focused before opening the dialog. To be used to restore the state upon dialog closing.
+         * @protected
+         */
+        this._previouslyFocusedElement = null;
     },
     $destructor : function () {
         this.close();
@@ -680,6 +687,12 @@ module.exports = Aria.classDefinition({
             var popupContainer = PopupContainerManager.createPopupContainer(cfg.container);
             this._popupContainer = popupContainer;
 
+            // previouslyFocusedElement ----------------------------------------
+
+            if (isModal) {
+                this._previouslyFocusedElement = Aria.$window.document.activeElement;
+            }
+
             // hiddenElements --------------------------------------------------
 
             if (isModal && waiAria) {
@@ -865,6 +878,7 @@ module.exports = Aria.classDefinition({
             var cfg = this._cfg;
 
             var isModal = cfg.modal;
+
             var waiAria = cfg.waiAria;
 
             // ------------------------------------------------------ processing
@@ -884,6 +898,9 @@ module.exports = Aria.classDefinition({
 
                 this._hiddenElements = [];
             }
+
+
+            // -----------------------------------------------------------------
 
             if (this._popup) {
                 this._destroyDraggable();
@@ -914,6 +931,14 @@ module.exports = Aria.classDefinition({
                     "viewportResized" : this._onViewportResized,
                     scope : this
                 });
+
+                if (isModal) {
+                    var previouslyFocusedElement = this._previouslyFocusedElement;
+                    if (previouslyFocusedElement != null) {
+                        previouslyFocusedElement.focus();
+                        this._previouslyFocusedElement = null;
+                    }
+                }
             }
         },
 

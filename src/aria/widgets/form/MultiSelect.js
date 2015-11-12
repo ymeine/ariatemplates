@@ -152,10 +152,10 @@ module.exports = Aria.classDefinition({
             if (event.keyCode == ariaDomEvent.KC_ESCAPE) {
                 if (this._dropDownOpen) {
                     this._toggleDropdown();
-					return true;
+                    return true;
                 }
             }
-            
+
             return false;
         },
 
