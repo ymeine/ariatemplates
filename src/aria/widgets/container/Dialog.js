@@ -243,20 +243,62 @@ module.exports = Aria.classDefinition({
          * @param {String} cssClassPostfix
          * @param {String} skinIcon
          */
-        __writeTitlebarButton : function (out, delegateId, cssClassPostfix, skinIcon) {
+        __writeTitlebarButton : function (out, delegateId, cssClassPostfix, skinIcon, label) {
+            // --------------------------------------------------- destructuring
+
             var cfg = this._cfg;
+            var skinnableClass = this._skinnableClass;
+
+            var waiAria = cfg.waiAria;
+
+            // ------------------------------------------------------ processing
+
+            // wrapper (opening) -----------------------------------------------
+
             // Adding atdraggable="" to make sure clicking on the button does not start the drag operation
             // Using the atdraggable attribute directly instead of the aria.utils.Mouse.DRAGGABLE_ATTRIBUTE
             // variable because aria.utils.Mouse may not be loaded yet.
-            out.write(['<span atdraggable="" class="x', this._skinnableClass, '_', cssClassPostfix, ' x',
-                    this._skinnableClass, '_', cfg.sclass, '_', cssClassPostfix, '" ',
-                    ariaUtilsDelegate.getMarkup(delegateId), '>'].join(''));
-            var button = new ariaWidgetsIcon({
-                icon : this._skinObj[skinIcon]
-            }, this._context, this._lineNumber);
+
+            var attributes = [];
+
+            attributes.push(
+                'atdraggable=""',
+                'class="' + [
+                    'x' + skinnableClass + '_' + cssClassPostfix,
+                    'x' + skinnableClass + '_' + cfg.sclass + '_' + cssClassPostfix
+                ].join(' ') + '"',
+                ariaUtilsDelegate.getMarkup(delegateId)
+            );
+
+            var openingTagMarkup = '<span ' + attributes.join(' ') + '>';
+
+            out.write(openingTagMarkup);
+
+            // button ----------------------------------------------------------
+
+            var iconConfiguration = {
+                icon : this._skinObj[skinIcon],
+                waiAria : waiAria
+            };
+
+            if (waiAria && label) {
+                iconConfiguration.tooltip = label;
+                iconConfiguration.label = label;
+            }
+
+            var button = new ariaWidgetsIcon(iconConfiguration, this._context, this._lineNumber);
+
             out.registerBehavior(button);
+
             button.writeMarkup(out);
+
+            // wrapper (closing) -----------------------------------------------
+
             out.write('</span>');
+
+            // ---------------------------------------------------------- return
+
+            return button;
         },
 
         __getLabelId : function () {
@@ -388,7 +430,7 @@ module.exports = Aria.classDefinition({
                     fn : this._onCloseBtnEvent,
                     scope : this
                 });
-                this.__writeTitlebarButton(out, this._closeDelegateId, "close", "closeIcon");
+                this.__writeTitlebarButton(out, this._closeDelegateId, "close", "closeIcon", this._cfg.closeLabel);
             }
 
             // title bar > maximize button -------------------------------------
@@ -398,7 +440,7 @@ module.exports = Aria.classDefinition({
                     fn : this._onMaximizeBtnEvent,
                     scope : this
                 });
-                this.__writeTitlebarButton(out, this._maximizeDelegateId, "maximize", "maximizeIcon");
+                this.__writeTitlebarButton(out, this._maximizeDelegateId, "maximize", "maximizeIcon", this._cfg.maximizeLabel);
             }
 
             // title bar (end) -------------------------------------------------
@@ -517,7 +559,7 @@ module.exports = Aria.classDefinition({
          * @param {aria.DomEvent} event
          */
         _onCloseBtnEvent : function (event) {
-            if (event.type == "click") {
+            if (this._buttonShouldDoAction(event)) {
                 this.actionClose();
             }
         },
@@ -528,9 +570,44 @@ module.exports = Aria.classDefinition({
          * @param {aria.DomEvent} event
          */
         _onMaximizeBtnEvent : function (event) {
-            if (event.type == "click") {
+            if (this._buttonShouldDoAction(event)) {
                 this.actionToggleMaximize();
             }
+        },
+
+        _buttonShouldDoAction : function (event) {
+            // --------------------------------------------------- destructuring
+
+            var type = event.type;
+
+            // ------------------------------------------------------ processing
+
+            var doAction = false;
+
+            switch (type) {
+
+            // click -----------------------------------------------------------
+
+                case "click":
+                    doAction = true;
+
+                    break;
+
+            // keydown ---------------------------------------------------------
+
+                case "keydown":
+                    var keyCode = event.keyCode;
+
+                    if (keyCode == event.KC_RETURN || keyCode == event.KC_NUM_CENTER) {
+                        doAction = true;
+                    }
+
+                    break;
+            }
+
+            // ---------------------------------------------------------- return
+
+            return doAction;
         },
 
         /**
