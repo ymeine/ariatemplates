@@ -1977,10 +1977,18 @@ module.exports = Aria.beanDefinitions({
                     $description : "Whether the dialog has a close button in its title bar.",
                     $default : true
                 },
+                "closeLabel" : {
+                    $type : "json:String",
+                    $description : "The label to use for the close icon (can be used in various ways such as for tooltip or accessibility)."
+                },
                 "maximizable" : {
                     $type : "json:Boolean",
                     $description : "Whether the dialog has a maximize button in its title bar. Note that you can set this to false and programatically maximize the Dialog to achieve a fullscreen-only Dialog solution.",
                     $default : false
+                },
+                "maximizeLabel" : {
+                    $type : "json:String",
+                    $description : "The label to use for the maximize icon (can be used in various ways such as for tooltip or accessibility)."
                 },
                 "closeOnMouseClick" : {
                     $type : "json:Boolean",
