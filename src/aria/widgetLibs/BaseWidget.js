@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 var Aria = require("../Aria");
+var ariaUtilsType = require("../utils/Type");
 var ariaUtilsIdManager = require("../utils/IdMgr");
 var ariaTemplatesCSSMgr = require("../templates/CSSMgr");
 var ariaUtilsArray = require("../utils/Array");
@@ -261,6 +262,94 @@ var ariaUtilsArray = require("../utils/Array");
                     }
                     this._dynamicIds = null;
                 }
+            },
+
+
+
+            ////////////////////////////////////////////////////////////////////
+            // Markup generation helpers
+            ////////////////////////////////////////////////////////////////////
+
+            _propertiesListToString : function (properties, joinParts, joinKeyValue) {
+                // ---------------------------------- input arguments processing
+
+                if (!ariaUtilsType.isArray(properties)) {
+                    properties = [properties];
+                }
+
+                // -------------------------------------------------- processing
+
+                var parts = [];
+
+                for (var index = 0, length = properties.length; index < length; index++) {
+                    var property = properties[index];
+
+                    var part;
+                    if (ariaUtilsType.isString(property)) {
+                        part = property;
+                    } else {
+                        var key;
+                        var value;
+
+                        if (ariaUtilsType.isArray(property)) {
+                            key = property[0];
+                            value = property[1];
+                        } else {
+                            key = property.key;
+                            value = property.value;
+                        }
+
+                        part = joinKeyValue(key, value);
+                    }
+
+                    parts.push(part);
+                }
+
+                var string = joinParts(parts);
+
+                // ------------------------------------------------------ return
+
+                return string;
+            },
+
+            _classesListToString : function (classes) {
+                // ---------------------------------- input arguments processing
+
+                if (!ariaUtilsType.isArray(classes)) {
+                    classes = [classes];
+                }
+
+                // -------------------------------------------------- processing
+
+                var string = classes.join(' ');
+
+                // ------------------------------------------------------ return
+
+                return string;
+            },
+
+            _attributesListToString : function (attributes) {
+                var self = this;
+
+                return this._propertiesListToString(attributes, function (parts) {
+                    return parts.join(' ');
+                }, function (key, value) {
+                    if (key == 'class') {
+                        value = self._classesListToString(value);
+                    } else if (key == 'style') {
+                        value = self._styleDeclarationsListToString(value);
+                    }
+
+                    return '' + key + '=' + '"' + value + '"';
+                });
+            },
+
+            _styleDeclarationsListToString : function (declarations) {
+                return this._propertiesListToString(declarations, function (parts) {
+                    return parts.join('; ');
+                }, function (key, value) {
+                    return '' + key + ': ' + value;
+                });
             }
         }
     });
