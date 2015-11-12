@@ -144,6 +144,12 @@ module.exports = Aria.classDefinition({
          * @type Array
          */
         this._hiddenElements = null;
+
+        /*
+         * The element that was previously focused before opening the dialog. To be used to restore the state upon dialog closing.
+         * @protected
+         */
+        this._previouslyFocusedElement = null;
     },
     $destructor : function () {
         this.close();
@@ -664,6 +670,12 @@ module.exports = Aria.classDefinition({
             var popupContainer = PopupContainerManager.createPopupContainer(cfg.container);
             this._popupContainer = popupContainer;
 
+            // previouslyFocusedElement ----------------------------------------
+
+            if (modal) {
+                this._previouslyFocusedElement = Aria.$window.document.activeElement;
+            }
+
             // hiddenElements --------------------------------------------------
 
             if (modal && waiAria) {
@@ -842,6 +854,7 @@ module.exports = Aria.classDefinition({
          */
         close : function () {
             var cfg = this._cfg;
+            var modal = cfg.modal;
             var hiddenElements = this._hiddenElements;
 
             if (hiddenElements != null) {
@@ -885,6 +898,16 @@ module.exports = Aria.classDefinition({
                     "viewportResized" : this._onViewportResized,
                     scope : this
                 });
+
+                if (modal) {
+                    var previouslyFocusedElement = this._previouslyFocusedElement;
+                    if (previouslyFocusedElement != null) {
+                        setTimeout(function () {
+                            previouslyFocusedElement.focus();
+                        }, 0);
+                        this._previouslyFocusedElement = null;
+                    }
+                }
             }
         },
 
