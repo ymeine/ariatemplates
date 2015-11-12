@@ -1354,6 +1354,10 @@ module.exports = Aria.beanDefinitions({
                     $type : "common:Callback",
                     $description : "Function to be called when the user clicks on the icon."
                 },
+                "label" : {
+                    $type : "json:String",
+                    $description : "The label to use for the icon (used for accessibility only)."
+                },
                 "sourceImage" : {
                     $type : "json:Object",
                     $description : "Configuration for custom image",
