@@ -138,6 +138,12 @@ module.exports = Aria.classDefinition({
          * @type Integer
          */
         this._cfg.heightMaximized = null;
+
+        /**
+         * Holds the list of elements that are made hidden when opening a modal dialog. This should not contain already previously hidden elements, and this should be empty for both closed or non-modal dialogs.
+         * @type Array
+         */
+        this._hiddenElements = [];
     },
     $destructor : function () {
         this.close();
@@ -650,7 +656,17 @@ module.exports = Aria.classDefinition({
          * Creates and displays the popup.
          */
         open : function () {
+            // --------------------------------------------------- destructuring
+
             var cfg = this._cfg;
+
+            var isModal = cfg.modal;
+            var waiAria = cfg.waiAria;
+
+            // ------------------------------------------------------ processing
+
+            // refreshParams ---------------------------------------------------
+
             var refreshParams = {
                 section : "__dialog_" + this._domId,
                 writerCallback : {
@@ -659,28 +675,62 @@ module.exports = Aria.classDefinition({
                 }
             };
 
+            // popupContainer --------------------------------------------------
+
             var popupContainer = PopupContainerManager.createPopupContainer(cfg.container);
             this._popupContainer = popupContainer;
 
+            // hiddenElements --------------------------------------------------
+
+            if (isModal && waiAria) {
+                var attributeName = 'aria-hidden';
+                var attributeValue = 'true';
+
+                var hiddenElements = this._hiddenElements;
+
+                // var container = Aria.$window.document.body;
+                var container = popupContainer.getContainerElt();
+                var children = container.children;
+
+                for (var index = 0, length = children.length; index < length; index++) {
+                    var child = children[index];
+
+                    if (!child.hasAttribute(attributeName)) {
+                        child.setAttribute(attributeName, attributeValue);
+                        hiddenElements.push(child);
+                    }
+                }
+            }
+
+            // optionsBeforeMaximize -------------------------------------------
             // store current options to reapply them when unmaximized
+
             this._optionsBeforeMaximize = this._createOptionsBeforeMaximize(cfg);
 
+            // section ---------------------------------------------------------
+
             var section = this._context.getRefreshedSection(refreshParams);
+
+            // popup -----------------------------------------------------------
+
             var popup = new ariaPopupsPopup();
+
             this._popup = popup;
+
             popup.$on({
                 "onAfterOpen" : this._onAfterPopupOpen,
                 "onEscape" : this.actionClose,
                 "onAfterClose" : this._onAfterPopupClose,
                 scope : this
             });
+
             if (cfg.closeOnMouseClick) {
                 popup.$on({
                     "onMouseClickClose" : this._onMouseClickClose,
                     scope : this
                 });
             }
-            var isModal = cfg.modal;
+
             popup.open({
                 section : section,
                 keepSection : true,
@@ -703,14 +753,18 @@ module.exports = Aria.classDefinition({
                 waiAria: cfg.waiAria
             });
 
+            // -----------------------------------------------------------------
+
             // must be registered before we check for _cfg.maximized, to fire the event correctly after overflow change
             ariaTemplatesLayout.$on({
                 "viewportResized" : this._onViewportResized,
                 scope : this
             });
 
+            // -----------------------------------------------------------------
+
             // in case when bound "maximized" was toggled while Dialog was not visible
-            if (this._cfg.maximized) {
+            if (cfg.maximized) {
                 this._setContainerOverflow("hidden");
                 this._setMaximizedHeightAndWidth();
             }
@@ -807,9 +861,32 @@ module.exports = Aria.classDefinition({
          * Hides and destroys the dialog
          */
         close : function () {
-            var cfg = this._cfg;
-            if (this._popup) {
+            // --------------------------------------------------- destructuring
 
+            var cfg = this._cfg;
+
+            var isModal = cfg.modal;
+            var waiAria = cfg.waiAria;
+
+            // ------------------------------------------------------ processing
+
+            // hiddenElements --------------------------------------------------
+
+            if (isModal && waiAria) {
+                var attributeName = 'aria-hidden';
+
+                var hiddenElements = this._hiddenElements;
+
+                for (var index = 0, length = hiddenElements.length; index < length; index++) {
+                    var element = hiddenElements[index];
+
+                    element.removeAttribute(attributeName);
+                }
+
+                this._hiddenElements = [];
+            }
+
+            if (this._popup) {
                 this._destroyDraggable();
                 this._destroyResizable();
 
