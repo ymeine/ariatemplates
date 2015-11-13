@@ -336,8 +336,14 @@ module.exports = Aria.classDefinition({
             if (domEvt.keyCode == ariaDomEvent.KC_SPACE || domEvt.keyCode == ariaDomEvent.KC_ENTER) {
                 this._keyPressed = true;
                 this._updateState();
-                domEvt.stopPropagation();
-                return false;
+
+                if (!this._performAction(domEvt)) {
+                    domEvt.stopPropagation();
+
+                    return false;
+                }
+
+                return true;
             }
 
             return true;
@@ -368,14 +374,8 @@ module.exports = Aria.classDefinition({
         _dom_onkeyup : function (domEvt) {
             if (domEvt.keyCode == ariaDomEvent.KC_SPACE || domEvt.keyCode == ariaDomEvent.KC_ENTER) {
                 this._keyPressed = false;
-                this._updateState();
-
-                if (!this._performAction(domEvt)) {
-                    domEvt.stopPropagation();
-                    return false;
-                }
-                return true;
             }
+
             return true;
         },
 
