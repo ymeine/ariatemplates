@@ -89,9 +89,15 @@ module.exports = Aria.classDefinition({
             if (domEvt.keyCode == aria.DomEvent.KC_ENTER) {
                 this._keyPressed = true;
 
-                domEvt.stopPropagation();
-                return false;
+                if (!this._performAction(domEvt)) {
+                    domEvt.stopPropagation();
+
+                    return false;
+                }
+
+                return true;
             }
+
             return true;
         },
 
@@ -109,23 +115,6 @@ module.exports = Aria.classDefinition({
             } else {
                 return this.$ActionWidget._dom_onclick.apply(this, arguments);
             }
-        },
-
-        /**
-         * React to delegated key up events
-         * @protected
-         * @param {aria.DomEvent} domEvt Event
-         */
-        _dom_onkeyup : function (domEvt) {
-            if (domEvt.keyCode == aria.DomEvent.KC_ENTER) {
-
-                if (!this._performAction(domEvt)) {
-                    domEvt.stopPropagation();
-                    return false;
-                }
-                return true;
-            }
-            return true;
         },
 
         /**
