@@ -223,6 +223,18 @@ module.exports = Aria.classDefinition({
          */
         _handleKey : function (event) {},
 
+        _isShiftF10Pressed : function (event) {
+            if (event.shiftKey && event.keyCode === 121) {
+                if (event.preventDefault) {
+                    event.preventDefault(true);
+                }
+
+                return true;
+            }
+
+            return false;
+        },
+
         /**
          * Internal method to handle the keydown event
          * @protected
@@ -230,6 +242,12 @@ module.exports = Aria.classDefinition({
          */
         _dom_onkeydown : function (event) {
             if (event.isSpecialKey) {
+                if (this._isShiftF10Pressed(event)) {
+                    this._toggleDropdown();
+
+                    return;
+                }
+
                 this._handleKey(event);
             }
         },
