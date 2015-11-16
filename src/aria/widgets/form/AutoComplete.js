@@ -206,6 +206,21 @@ module.exports = Aria.classDefinition({
 
         },
 
+        _dom_onkeydown : function (event) {
+            // On Shift+F10, when AutoComplete has no expand button enabled, we don't open the dropdown, we only close it
+            if (event.isSpecialKey) {
+                if (this._isShiftF10Pressed(event)) {
+                    if (!this._cfg.expandButton) {
+                        if (this._dropdownPopup == null) {
+                            return;
+                        }
+                    }
+                }
+            }
+
+            this.$DropDownTextInput._dom_onkeydown.apply(this, arguments);
+        },
+
         /**
          * Handle events raised by the frame
          * @param {Object} evt
