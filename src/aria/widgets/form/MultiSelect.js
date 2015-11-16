@@ -21,7 +21,7 @@ var ariaWidgetsFormListListStyle = require("./list/ListStyle.tpl.css");
 var ariaWidgetsContainerDivStyle = require("../container/DivStyle.tpl.css");
 var ariaWidgetsFormCheckBoxStyle = require("./CheckBoxStyle.tpl.css");
 var ariaWidgetsFormDropDownTextInput = require("./DropDownTextInput");
-
+var ariaWidgetsFormDropDownTrait = require("./DropDownTrait");
 
 /**
  * Multi-select widget which is a list of checkboxes and labels passed in an array of predefined values
@@ -143,20 +143,29 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
-            if ((event.keyCode == ariaDomEvent.KC_ARROW_UP) && this._checkCloseItem(event)) {
+            var handled = false;
+
+            if (
+                ariaWidgetsFormDropDownTrait.prototype._isShiftF10Pressed.call(this, event)
+                || ((event.keyCode == ariaDomEvent.KC_ARROW_UP)
+                    && this._checkCloseItem(event)
+                )
+            ) {
                 this.focus();
                 this._toggleDropdown();
-                return true;
-            }
 
-            if (event.keyCode == ariaDomEvent.KC_ESCAPE) {
+                handled = true;
+            } else if (event.keyCode == ariaDomEvent.KC_ESCAPE) {
                 if (this._dropDownOpen) {
                     this._toggleDropdown();
-                    return true;
+
+                    handled = true;
                 }
             }
 
-            return false;
+            // ---------------------------------------------------------- return
+
+            return handled;
         },
 
         /**
