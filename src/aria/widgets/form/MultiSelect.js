@@ -148,6 +148,14 @@ module.exports = Aria.classDefinition({
                 this._toggleDropdown();
                 return true;
             }
+
+            if (event.keyCode == ariaDomEvent.KC_ESCAPE) {
+                if (this._dropDownOpen) {
+                    this._toggleDropdown();
+					return true;
+                }
+            }
+            
             return false;
         },
 
