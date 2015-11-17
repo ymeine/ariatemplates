@@ -129,16 +129,22 @@ module.exports = Aria.classDefinition({
 
         /**
          * Handle key event not handled by the list, in this case arrow up to close the dropdown
+         *
          * @protected
-         * @param {aria.DomEvent} evt Click event
+         *
+         * @param {Object} information Information about the key event.
+         *
          * @return {Boolean}
          */
-        _keyPressed : function (evt) {
-            if ((evt.keyCode == ariaDomEvent.KC_ARROW_UP) && this._checkCloseItem(evt)) {
+        _keyPressed : function (information) {
+            var event = information.event;
+
+            if ((event.keyCode == ariaDomEvent.KC_ARROW_UP) && this._checkCloseItem(information)) {
                 this.focus();
                 this._toggleDropdown();
                 return true;
             }
+
             return false;
         },
 
