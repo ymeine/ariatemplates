@@ -94,10 +94,17 @@ var ariaUtilsDelegate = require("../utils/Delegate");
 
             /**
              * zIndex used to create a new popup. Start value is 20000 not to conflict with AriaJSP (consequence is that
-             * AT popup will always be above AriaJSP popup until a common dialog manager is developped)
+             * AT popup will always be above AriaJSP popup until a common dialog manager is developed)
              * @type Number
              */
             this.currentZIndex = this.baseZIndex;
+
+            /**
+             * Tells whether the shift key is currently pressed or not.
+             *
+             * @type Boolean
+             */
+            this._shiftKeyPressed = false;
 
             ariaUtilsAriaWindow.$on({
                 "unloadWindow" : this._reset,
@@ -265,6 +272,21 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                 });
                 // global navigation is disabled in case of a modal popup
                 navManager.setModalBehaviour(true);
+
+                utilsEvent.addListener(this._document.body, "focusin", {
+                    fn : this.onDocumentFocusIn,
+                    scope : this
+                });
+
+                utilsEvent.addListener(this._document.body, "keydown", {
+                    fn : this.onDocumentKeyDown,
+                    scope : this
+                });
+
+                utilsEvent.addListener(this._document.body, "keyup", {
+                    fn : this.onDocumentKeyUp,
+                    scope : this
+                });
             },
 
             /**
@@ -282,6 +304,18 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                 });
                 // restore globalKeyMap
                 navManager.setModalBehaviour(false);
+
+                utilsEvent.removeListener(this._document.body, "focusin", {
+                    fn : this.onDocumentFocusIn
+                });
+
+                utilsEvent.removeListener(this._document.body, "keydown", {
+                    fn : this.onDocumentKeyDown
+                });
+
+                utilsEvent.removeListener(this._document.body, "keyup", {
+                    fn : this.onDocumentKeyUp
+                });
             },
 
             /**
@@ -350,7 +384,9 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                             if (notifyTargetBehindModalPopup) {
                                 return notifyTargetBehindModalPopup(popup);
                             }
-                            return;
+
+                            ariaTemplatesNavigationManager.focusFirst(popup.domElement, this._shiftKeyPressed);
+                            break;
                         }
                     }
                 }
@@ -382,6 +418,32 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                 if (curZIndex !== this.currentZIndex) {
                     popup.setZIndex(this.getZIndexForPopup(popup));
                 }
+            },
+
+            /**
+             * @param {Object} event The DOM event triggering the callback
+             */
+            onDocumentKeyDown : function (event) {
+                var domEvent = new ariaDomEvent(event);
+
+                if (domEvent.keyCode == domEvent.KC_SHIFT) {
+                    this._shiftKeyPressed = true;
+                }
+
+                domEvent.$dispose();
+            },
+
+            /**
+             * @param {Object} event The DOM event triggering the callback
+             */
+            onDocumentKeyUp : function (event) {
+                var domEvent = new ariaDomEvent(event);
+
+                if (domEvent.keyCode == domEvent.KC_SHIFT) {
+                    this._shiftKeyPressed = false;
+                }
+
+                domEvent.$dispose();
             },
 
             /**
