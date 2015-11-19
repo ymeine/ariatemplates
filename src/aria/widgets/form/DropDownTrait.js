@@ -15,6 +15,7 @@
 var Aria = require("../../Aria");
 var ariaPopupsPopup = require("../../popups/Popup");
 var ariaUtilsJson = require("../../utils/Json");
+var ariaCoreBrowser = require("../../core/Browser");
 
 
 /**
@@ -231,6 +232,14 @@ module.exports = Aria.classDefinition({
         _dom_onkeydown : function (event) {
             if (event.isSpecialKey) {
                 this._handleKey(event);
+            }
+
+            if (ariaCoreBrowser.isChrome) {
+                if (event.keyCode == event.KC_ARROW_UP) {
+                    if (this._dropdownPopup) {
+                        event.preventDefault();
+                    }
+                }
             }
         },
 
