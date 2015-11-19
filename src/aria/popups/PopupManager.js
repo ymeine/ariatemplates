@@ -108,10 +108,17 @@ var ariaCoreTimer = require("../core/Timer");
 
             /**
              * zIndex used to create a new popup. Start value is 20000 not to conflict with AriaJSP (consequence is that
-             * AT popup will always be above AriaJSP popup until a common dialog manager is developped)
+             * AT popup will always be above AriaJSP popup until a common dialog manager is developed)
              * @type Number
              */
             this.currentZIndex = this.baseZIndex;
+
+            /**
+             * Tells whether the shift key is currently pressed or not.
+             *
+             * @type Boolean
+             */
+            this._shiftKeyPressed = false;
 
             ariaUtilsAriaWindow.$on({
                 "unloadWindow" : this._reset,
@@ -279,6 +286,16 @@ var ariaCoreTimer = require("../core/Timer");
                 });
                 // global navigation is disabled in case of a modal popup
                 navManager.setModalBehaviour(true);
+
+                utilsEvent.addListener(this._document.body, "keydown", {
+                    fn : this.onDocumentKeyDown,
+                    scope : this
+                });
+
+                utilsEvent.addListener(this._document.body, "keyup", {
+                    fn : this.onDocumentKeyUp,
+                    scope : this
+                });
             },
 
             /**
@@ -296,6 +313,14 @@ var ariaCoreTimer = require("../core/Timer");
                 });
                 // restore globalKeyMap
                 navManager.setModalBehaviour(false);
+
+                utilsEvent.removeListener(this._document.body, "keydown", {
+                    fn : this.onDocumentKeyDown
+                });
+
+                utilsEvent.removeListener(this._document.body, "keyup", {
+                    fn : this.onDocumentKeyUp
+                });
             },
 
             /**
@@ -364,7 +389,8 @@ var ariaCoreTimer = require("../core/Timer");
                             if (notifyTargetBehindModalPopup) {
                                 return notifyTargetBehindModalPopup(popup);
                             }
-                            return;
+
+                            break;
                         }
                     }
                 }
@@ -375,9 +401,10 @@ var ariaCoreTimer = require("../core/Timer");
              * @param {Object} event The DOM focusin event triggering the callback
              */
             onDocumentFocusIn : function (event) {
+                var self = this;
+
                 var domEvent = new ariaDomEvent(event);
                 var target = domEvent.target;
-                var self = this;
                 var popup = this.findParentPopup(target, function (popup) {
                     var eventObject = {
                         name: "beforePreventingFocus",
@@ -387,7 +414,11 @@ var ariaCoreTimer = require("../core/Timer");
                     };
                     self.$raiseEvent(eventObject);
                     if (!eventObject.cancel) {
-                        ariaTemplatesNavigationManager.focusFirst(popup.domElement);
+                        if (self._shiftKeyPressed) {
+        	                ariaTemplatesNavigationManager.focusNext(popup.popupContainer.getContainerElt(), true);
+    	                } else {
+	                        ariaTemplatesNavigationManager.focusFirst(popup.domElement, false);
+                    	}
                         return popup;
                     }
                     // if the focus is allowed, don't return any popup to bring to the front
@@ -465,6 +496,32 @@ var ariaCoreTimer = require("../core/Timer");
                     var curPopup = popupsToKeepInFront[i];
                     curPopup.setZIndex(this.getZIndexForPopup(curPopup));
                 }
+            },
+
+            /**
+             * @param {Object} event The DOM event triggering the callback
+             */
+            onDocumentKeyDown : function (event) {
+                var domEvent = new ariaDomEvent(event);
+
+                if (domEvent.keyCode == domEvent.KC_SHIFT) {
+                    this._shiftKeyPressed = true;
+                }
+
+                domEvent.$dispose();
+            },
+
+            /**
+             * @param {Object} event The DOM event triggering the callback
+             */
+            onDocumentKeyUp : function (event) {
+                var domEvent = new ariaDomEvent(event);
+
+                if (domEvent.keyCode == domEvent.KC_SHIFT) {
+                    this._shiftKeyPressed = false;
+                }
+
+                domEvent.$dispose();
             },
 
             /**

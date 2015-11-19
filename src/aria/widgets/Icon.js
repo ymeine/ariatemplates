@@ -159,6 +159,14 @@ module.exports = Aria.classDefinition({
             out.write(markup);
         },
 
+        focus : function () {
+            var element = this.getDom();
+
+            element.focus();
+
+            return true;
+        },
+
         /**
          * Change the style to display a different icon.
          * @param {String} newIcon
