@@ -120,7 +120,7 @@ var ariaWidgetsFormCheckBox = require("./CheckBox");
             },
 
             /**
-             * Internal method to hande the mousedown event
+             * Internal method to handle the mousedown event
              * @param {aria.DomEvent} event
              */
             _dom_onmousedown : function (event) {
@@ -128,7 +128,7 @@ var ariaWidgetsFormCheckBox = require("./CheckBox");
             },
 
             /**
-             * Internal method to hande the mouseup event
+             * Internal method to handle the mouseup event
              * @param {aria.DomEvent} event
              */
             _dom_onmouseup : function (event) {

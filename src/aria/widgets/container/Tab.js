@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 var Aria = require("../../Aria");
+var ariaUtilsJson = require("../../utils/Json");
 var ariaWidgetsFramesFrameFactory = require("../frames/FrameFactory");
 var ariaWidgetsContainerTabStyle = require("./TabStyle.tpl.css");
 var ariaWidgetsContainerContainer = require("./Container");
@@ -25,6 +26,7 @@ module.exports = Aria.classDefinition({
     $classpath : "aria.widgets.container.Tab",
     $extends : ariaWidgetsContainerContainer,
     $css : [ariaWidgetsContainerTabStyle],
+
     /**
      * Tab constructor
      * @param {aria.widgets.CfgBeans:TabCfg} cfg the widget configuration
@@ -62,7 +64,7 @@ module.exports = Aria.classDefinition({
             sclass : cfg.sclass,
             skinnableClass : this._skinnableClass,
             printOptions : cfg.printOptions,
-            id : Aria.testMode ? this._domId + "_" + cfg.tabId : undefined
+            id : Aria.testMode || cfg.waiAria ? this._getFrameId() : undefined
         });
 
         /**
@@ -72,9 +74,28 @@ module.exports = Aria.classDefinition({
          * @override
          */
         this._spanStyle = "z-index:100;vertical-align:top;";
-    },
-    $destructor : function () {
 
+        // ---------------------------------------------------------------------
+
+        this._tabIndex = '0';
+        this._ariaRole = 'tab';
+
+        this._updateLabelId();
+
+        var container = this._cfg.bind.selectedTab.inside;
+        var property = 'aria:tabpanel_controls_id';
+        ariaUtilsJson.addListener(container, property, {
+            fn: this._onAriaControlsChange,
+            scope: this
+        });
+
+        var controlsId = container[property];
+        if (controlsId != null){
+            this._ariaControls = controlsId;
+        }
+    },
+
+    $destructor : function () {
         if (this._frame) {
             this._frame.$dispose();
             this._frame = null;
@@ -82,6 +103,7 @@ module.exports = Aria.classDefinition({
 
         this.$Container.$destructor.call(this);
     },
+
     $prototype : {
         /**
          * Skinnable class to use for this widget.
@@ -105,6 +127,44 @@ module.exports = Aria.classDefinition({
             aria.widgets.container.Tab.superclass._init.call(this);
         },
 
+        _getFrameId : function () {
+            return this._domId + "_" + this._cfg.tabId;
+        },
+
+        _updateLabelId : function (selectedTab) {
+            // --------------------------------------------------- destructuring
+
+            var cfg = this._cfg;
+
+            var tabId = cfg.tabId;
+
+            var binding = cfg.bind.selectedTab;
+            var inside = binding.inside;
+
+            // ---------------------------------------------------- facilitation
+
+            if (selectedTab == null) {
+                var to = binding.to;
+
+                selectedTab = inside[to];
+            }
+
+            // ------------------------------------------------------ processing
+
+            var isSelected = selectedTab === tabId;
+
+            if (isSelected) {
+                var id = this._getFrameId();
+                var property = 'aria:tab_label_id';
+
+                // if (propagate) {
+                    ariaUtilsJson.setValue(inside, property, id);
+                // } else {
+                //     inside[property] = id;
+                // }
+            }
+        },
+
         /**
          * Give focus to the element representing the focus for this widget
          */
@@ -125,9 +185,19 @@ module.exports = Aria.classDefinition({
          * @protected
          */
         _onBoundPropertyChange : function (propertyName, newValue, oldValue) {
+            // --------------------------------------------------- destructuring
+
+            var cfg = this._cfg;
+            var tabId = cfg.tabId;
+
+            // ------------------------------------------------------ processing
+
+            var isSelected = newValue === tabId;
+            var wasSelected = oldValue === tabId;
+
             var changedState = false;
             if (propertyName === "selectedTab") {
-                if (newValue === this._cfg.tabId || oldValue === this._cfg.tabId) {
+                if (isSelected || wasSelected) {
                     changedState = true;
                 }
             } else {
@@ -135,8 +205,50 @@ module.exports = Aria.classDefinition({
             }
 
             if (changedState) {
-                this._cfg[propertyName] = newValue;
+                cfg[propertyName] = newValue;
                 this._updateState();
+
+                if (cfg.waiAria) {
+                    var element = this.getDom();
+
+                    if (isSelected) {
+                        element.setAttribute('aria-selected', 'true');
+                        // element.setAttribute('tabindex', '0');
+                    } else if (wasSelected) {
+                        element.removeAttribute('aria-selected');
+                        // element.removeAttribute('tabindex');
+                    }
+                }
+            }
+
+            this._updateLabelId(newValue);
+        },
+
+        _onAriaControlsChange : function (arg) {
+            var id = arg.newValue;
+            this._updateAriaControls(id);
+        },
+
+        _updateAriaControls : function (id) {
+            // --------------------------------------------------- destructuring
+
+            var element = this._domElt;
+
+            // ---------------------------------------------------- facilitation
+
+            if (id == null) {
+                var container = this._cfg.bind.selectedTab.inside;
+                var property = 'aria:tabpanel_controls_id';
+
+                id = container[property];
+            }
+
+            // ------------------------------------------------------ processing
+
+            if (element == null) {
+                this._ariaControls = id;
+            } else {
+                element.setAttribute('aria-controls', id);
             }
         },
 
@@ -170,7 +282,7 @@ module.exports = Aria.classDefinition({
         /**
          * Internal method to update the state of the tab, from the config and the mouse over variable
          * @param {Boolean} skipChangeState - If true we don't update the state in the frame as the frame may not be
-         * initialised
+         * initialized
          * @protected
          */
         _updateState : function (skipChangeState) {

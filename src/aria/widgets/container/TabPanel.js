@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 var Aria = require("../../Aria");
+var ariaUtilsJson = require("../../utils/Json");
 var ariaWidgetsFramesFrameFactory = require("../frames/FrameFactory");
 var ariaWidgetsContainerTabPanelStyle = require("./TabPanelStyle.tpl.css");
 var ariaWidgetsContainerContainer = require("./Container");
@@ -46,7 +47,24 @@ module.exports = Aria.classDefinition({
 
         this._defaultMargin = 0;
 
+        // ---------------------------------------------------------------------
+
         this._spanStyle = "top:-1.5px;";
+
+        this._tabIndex = '0';
+        this._ariaRole = 'tabpanel';
+
+        var container = this._cfg.bind.selectedTab.inside;
+        var property = 'aria:tab_label_id';
+        ariaUtilsJson.addListener(container, property, {
+            fn: this._onAriaLabelChange,
+            scope: this
+        });
+
+        var labelId = container[property];
+        if (labelId != null){
+            this._ariaLabelledBy = labelId;
+        }
     },
     /**
      * TabPanel destructor
@@ -74,9 +92,11 @@ module.exports = Aria.classDefinition({
          */
         _init : function () {
             var frameDom = aria.utils.Dom.getDomElementChild(this.getDom(), 0);
+
             if (frameDom) {
                 this._frame.linkToDom(frameDom);
             }
+
             this.$Container._init.call(this);
         },
 
@@ -90,11 +110,44 @@ module.exports = Aria.classDefinition({
         _onBoundPropertyChange : function (propertyName, newValue, oldValue) {
             if (propertyName == "selectedTab") {
                 this._context.$refresh({
-                    section : "__tabPanel_" + this._domId
+                    section : this._getSectionId()
                 });
+
             } else {
                 this.$Container._onBoundPropertyChange.call(this, propertyName, newValue, oldValue);
             }
+        },
+
+        _onAriaLabelChange : function (arg) {
+            var id = arg.newValue;
+            this._updateAriaLabel(id);
+        },
+
+        _updateAriaLabel : function (id) {
+            // --------------------------------------------------- destructuring
+
+            var element = this._domElt;
+
+            // ---------------------------------------------------- facilitation
+
+            if (id == null) {
+                var container = this._cfg.bind.selectedTab.inside;
+                var property = 'aria:tab_label_id';
+
+                id = container[property];
+            }
+
+            // ------------------------------------------------------ processing
+
+            if (element == null) {
+                this._ariaLabelledBy = id;
+            } else {
+                element.setAttribute('aria-labelledby', id);
+            }
+        },
+
+        _getSectionId : function () {
+            return "__tabPanel_" + this._domId;
         },
 
         /**
@@ -103,13 +156,21 @@ module.exports = Aria.classDefinition({
          * @protected
          */
         _widgetMarkup : function (out) {
+            var cfg = this._cfg;
+
             this._frame.writeMarkupBegin(out);
             out.beginSection({
-                id : "__tabPanel_" + this._domId,
-                macro : this._cfg.macro
+                id : this._getSectionId(),
+                macro : cfg.macro
             });
             out.endSection();
             this._frame.writeMarkupEnd(out);
+
+            var container = cfg.bind.selectedTab.inside;
+            var property = 'aria:tabpanel_controls_id';
+            var id = this._domId;
+
+            ariaUtilsJson.setValue(container, property, id);
         },
 
         /**
