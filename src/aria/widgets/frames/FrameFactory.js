@@ -73,7 +73,7 @@ module.exports = Aria.classDefinition({
          * Create a new frame according to the given configuration object. The type of frame returned (either TableFrame
          * or FixedHeightFrame) depends on the frame.frameType property of the skin class.
          * @param {aria.widgets.frames.CfgBeans:FrameCfg} cfg Frame configuration
-         * @return {aria.widgets.frames.Frame} A frame object, or null if an error occured (in this case, the error is
+         * @return {aria.widgets.frames.Frame} A frame object, or null if an error occurred (in this case, the error is
          * logged).
          */
         createFrame : function (cfg) {

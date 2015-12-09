@@ -354,6 +354,7 @@ module.exports = Aria.classDefinition({
         __markupBegin : function (out) {
             var cfg = this._cfg, cssClasses = ariaCoreTplClassLoader.addPrintOptions(this._cssClassNames, cfg.printOptions);
             var delegateManager = ariaUtilsDelegate;
+
             if (cfg.block) {
                 cssClasses += " xBlock";
             }
@@ -379,16 +380,44 @@ module.exports = Aria.classDefinition({
 
             out.write('class="' + cssClasses + '" ');
 
+            if (cfg.waiAria) {
+                var role = this._ariaRole;
+                if (role != null) {
+                    out.write('role="' + role + '" ');
+                }
+
+                var labelledby = this._ariaLabelledBy;
+                if (labelledby != null) {
+                    out.write('aria-labelledby="' + labelledby + '" ');
+                }
+
+                var controls = this._ariaControls;
+                if (controls != null) {
+                    out.write('aria-controls="' + controls + '" ');
+                }
+
+                var selected = this._ariaSelected;
+                if (selected != null && selected) {
+                    out.write('aria-selected="true"');
+                }
+            }
+
+            if (this._tabIndex != null) {
+                out.write('tabindex="' + this._tabIndex + '" ');
+            }
+
             out.write('style="');
             if (this._spanStyle != null) {
                 out.write(this._spanStyle);
             }
+
             if (cfg.width > -1) {
                 out.write('width:' + cfg.width + 'px;');
             }
             if (cfg.height != null && cfg.height != -1) {
                 out.write('height:' + cfg.height + 'px;');
             }
+
             if (cfg.verticalAlign != null) {
                 if (this.verticalAlignTester.test(cfg.verticalAlign)) {
                     out.write('vertical-align:' + cfg.verticalAlign + ';');
@@ -396,6 +425,7 @@ module.exports = Aria.classDefinition({
                     this.$logError(this.INVALID_VERTICAL_ALIGN, [cfg.verticalAlign]);
                 }
             }
+
             if (cfg.margins != null && cfg.margins.match(/^(\d+|x) (\d+|x) (\d+|x) (\d+|x)$/)) {
                 var margins = cfg.margins.split(" ");
                 out.write(['margin:', margins[0] === "x" ? this._defaultMargin : margins[0], 'px ',
@@ -405,13 +435,16 @@ module.exports = Aria.classDefinition({
             } else {
                 out.write('margin:' + this._defaultMargin + 'px;" ');
             }
+
             if (cfg.tooltip) {
                 out.write('title="' + ariaUtilsString.escapeHTMLAttr(cfg.tooltip) + '" ');
             }
-            if (cfg.tabIndex != null && !this._customTabIndexProvided && !cfg.disabled) {
+
+            if (cfg.tabIndex != null && !this._tabIndex && !this._customTabIndexProvided && !cfg.disabled) {
                 var tabIndex = this._calculateTabIndex();
                 out.write('tabindex="' + tabIndex + '" ');
             }
+
             out.write('>'); // end of main span.
         },
 

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 var Aria = require("../../Aria");
+
 var ariaWidgetsFramesFrameFactory = require("../frames/FrameFactory");
 var ariaWidgetsContainerTabStyle = require("./TabStyle.tpl.css");
 var ariaWidgetsContainerContainer = require("./Container");
@@ -25,12 +26,29 @@ module.exports = Aria.classDefinition({
     $classpath : "aria.widgets.container.Tab",
     $extends : ariaWidgetsContainerContainer,
     $css : [ariaWidgetsContainerTabStyle],
+
     /**
      * Tab constructor
      * @param {aria.widgets.CfgBeans:TabCfg} cfg the widget configuration
      * @param {aria.templates.TemplateCtxt} ctxt template context
      */
     $constructor : function (cfg, ctxt) {
+        // ---------------------------------------------------------------------
+
+        var inside = this._getConfigurationOfCommonBinding(cfg).inside;
+
+        cfg.bind.controlledTabPanelId = {
+            inside: inside,
+            to: this._getControlledTabPanelIdPropertyName(cfg)
+        };
+
+        cfg.bind.labelId = {
+            inside: inside,
+            to: this._getLabelIdPropertyName(cfg)
+        };
+
+        // ---------------------------------------------------------------------
+
         this.$Container.constructor.apply(this, arguments);
         this._setSkinObj(this._skinnableClass);
 
@@ -62,7 +80,7 @@ module.exports = Aria.classDefinition({
             sclass : cfg.sclass,
             skinnableClass : this._skinnableClass,
             printOptions : cfg.printOptions,
-            id : Aria.testMode ? this._domId + "_" + cfg.tabId : undefined
+            id : Aria.testMode || cfg.waiAria ? this._getFrameId() : undefined
         });
 
         /**
@@ -72,9 +90,35 @@ module.exports = Aria.classDefinition({
          * @override
          */
         this._spanStyle = "z-index:100;vertical-align:top;";
-    },
-    $destructor : function () {
 
+        // ---------------------------------------------------------------------
+
+        this._tabIndex = '0'; // used by base classes to generate markup
+        this._ariaRole = 'tab'; // used by base classes to generate markup
+
+        cfg = this._cfg;
+        var binding = cfg.bind.selectedTab;
+        var inside = binding.inside;
+        var to = binding.to;
+
+        if (inside[to] === cfg.tabId) {
+            this._ariaSelected = true; // used by base classes to generate markup
+        }
+
+        // aria-labelledby (TabPanel) ------------------------------------------
+
+        this._updateLabelId();
+
+        // aria-controls (Tab) -------------------------------------------------
+
+        // use it if already available
+        var id = this._getControlledTabPanelId();
+        if (id != null) {
+            this._ariaControls = id; // used by base classes to generate markup
+        }
+    },
+
+    $destructor : function () {
         if (this._frame) {
             this._frame.$dispose();
             this._frame = null;
@@ -82,6 +126,7 @@ module.exports = Aria.classDefinition({
 
         this.$Container.$destructor.call(this);
     },
+
     $prototype : {
         /**
          * Skinnable class to use for this widget.
@@ -105,6 +150,140 @@ module.exports = Aria.classDefinition({
             aria.widgets.container.Tab.superclass._init.call(this);
         },
 
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // Tab & TabPanel communication
+        ////////////////////////////////////////////////////////////////////////
+
+        _getConfigurationOfCommonBinding : function (cfg) {
+            // -------------------------------------- input arguments processing
+
+            if (cfg == null) {
+                cfg = this._cfg;
+            }
+
+            // --------------------------------------------- processing & return
+
+            return cfg.bind.selectedTab;
+        },
+
+        _getCommonBindingMetaDataPropertyName : function (name, cfg) {
+            // --------------------------------------------------- destructuring
+
+            var configurationOfCommonBinding = this._getConfigurationOfCommonBinding(cfg);
+            var to = configurationOfCommonBinding.to;
+
+            // ------------------------------------------------------ processing
+
+            var property = 'aria:' + to + '_' + name;
+
+            // ---------------------------------------------------------- return
+
+            return property;
+        },
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // TabPanel label id management (from Tab to TabPanel)
+        ////////////////////////////////////////////////////////////////////////
+
+        _getLabelIdPropertyName : function (cfg) {
+            return this._getCommonBindingMetaDataPropertyName('labelId', cfg);
+        },
+
+        _getFrameId : function () {
+            return this._domId + "_" + this._cfg.tabId;
+        },
+
+        _updateLabelId : function (selectedTab) {
+            // --------------------------------------------------- destructuring
+
+            var cfg = this._cfg;
+
+            var tabId = cfg.tabId;
+
+            // ---------------------------------------------------- facilitation
+
+            if (selectedTab == null) {
+                var binding = this._getConfigurationOfCommonBinding();
+                var inside = binding.inside;
+                var to = binding.to;
+
+                selectedTab = inside[to];
+            }
+
+            // ------------------------------------------------------ processing
+
+            if (!selectedTab) {
+                this.changeProperty('labelId', null);
+            } else {
+                var isSelected = selectedTab === tabId;
+
+                if (isSelected) {
+                    var id = this._getFrameId();
+
+                    this.changeProperty('labelId', id);
+                }
+            }
+        },
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // Tab controls id management (from TabPanel to Tab)
+        ////////////////////////////////////////////////////////////////////////
+
+        _getControlledTabPanelIdPropertyName : function (cfg) {
+            return this._getCommonBindingMetaDataPropertyName('controlledTabPanelId', cfg);
+        },
+
+        _getControlledTabPanelId : function () {
+            // --------------------------------------------------- destructuring
+
+            var configurationOfCommonBinding = this._getConfigurationOfCommonBinding();
+
+            var inside = configurationOfCommonBinding.inside;
+            var property = this._getControlledTabPanelIdPropertyName();
+
+            // ------------------------------------------------------ processing
+
+            var id = inside[property];
+
+            // ---------------------------------------------------------- return
+
+            return id;
+        },
+
+        _reactToControlledTabPanelIdChange : function (id) {
+            // --------------------------------------------------- configuration
+
+            var attributeName = 'aria-controls';
+
+            // ----------------------------------------------- early termination
+
+            if (!this._cfg.waiAria) {
+                return;
+            }
+
+            // ------------------------------------------------------ processing
+
+            var element = this.getDom();
+
+            if (!id) {
+                element.removeAttribute(attributeName);
+            } else {
+                element.setAttribute(attributeName, id);
+            }
+        },
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        ////////////////////////////////////////////////////////////////////////
+
         /**
          * Give focus to the element representing the focus for this widget
          */
@@ -125,20 +304,50 @@ module.exports = Aria.classDefinition({
          * @protected
          */
         _onBoundPropertyChange : function (propertyName, newValue, oldValue) {
+            // --------------------------------------------------- destructuring
+
+            var cfg = this._cfg;
+            var tabId = cfg.tabId;
+
+            // ------------------------------------------------------ processing
+
             var changedState = false;
             if (propertyName === "selectedTab") {
-                if (newValue === this._cfg.tabId || oldValue === this._cfg.tabId) {
+                var isSelected = newValue === tabId;
+                var wasSelected = oldValue === tabId;
+
+                if (isSelected || wasSelected) {
                     changedState = true;
                 }
+            } else if (propertyName === 'controlledTabPanelId') {
+                this._reactToControlledTabPanelIdChange(newValue);
             } else {
                 this.$Container._onBoundPropertyChange.call(this, propertyName, newValue, oldValue);
             }
 
             if (changedState) {
-                this._cfg[propertyName] = newValue;
+                cfg[propertyName] = newValue;
                 this._updateState();
+
+                if (cfg.waiAria) {
+                    var element = this.getDom();
+
+                    if (isSelected) {
+                        element.setAttribute('aria-selected', 'true');
+                    } else if (wasSelected) {
+                        element.removeAttribute('aria-selected');
+                    }
+                }
             }
+
+            this._updateLabelId(newValue);
         },
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        ////////////////////////////////////////////////////////////////////////
 
         /**
          * Internal function to generate the internal widget markup
@@ -170,7 +379,7 @@ module.exports = Aria.classDefinition({
         /**
          * Internal method to update the state of the tab, from the config and the mouse over variable
          * @param {Boolean} skipChangeState - If true we don't update the state in the frame as the frame may not be
-         * initialised
+         * initialized
          * @protected
          */
         _updateState : function (skipChangeState) {
