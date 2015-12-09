@@ -119,7 +119,7 @@ module.exports = Aria.classDefinition({
                     'bkgB">' + this.__addFrameIcon(cfg, cssPrefix, 'top') + '</td>', '<td class="', cssPrefix, 'trc ',
                     cssPrefix, 'bkgA"></td>', '</tr>', '<tr>', '<td class="', cssPrefix, 'ls ', cssPrefix,
                     'bkgC"></td>', '<td class="', cssPrefix, 'm">', '<span ',
-                    Aria.testMode && this._baseId ? ' id="' + this._baseId + '"' : '',
+                    this._baseId ? ' id="' + this._baseId + '"' : '',
                     (sizeInfo.style ? 'style="' + sizeInfo.style + '"' : ''), ' class="', sizeInfo.className, '">'].join(''));
         },
 

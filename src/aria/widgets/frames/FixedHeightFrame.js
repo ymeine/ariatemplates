@@ -106,8 +106,10 @@ var ariaWidgetsFramesFrame = require("./Frame");
                 out.write(['<span  ', hasBorder ? '' : 'style="display:none;"', ' class="xFixedHeightFrame_bme ',
                         cssPrefix, 'b ', cssPrefix, 'bkgA"></span>'].join(''));
                 this._writeExtraMarkupBegin(out);
-                out.write(['<span class="xFixedHeightFrame_bme ', cssPrefix, 'm ', cssPrefix, 'bkgB" >',
-                        '<span style="', sizeInfo.style, '" class="', sizeInfo.className, '">'].join(''));
+                out.write([
+                    '<span class="xFixedHeightFrame_bme ', cssPrefix, 'm ', cssPrefix, 'bkgB" >',
+                        '<span ', (cfg.id ? 'id="' + cfg.id + '" ' : ''), 'style="', sizeInfo.style, '" class="', sizeInfo.className, '">'
+                ].join(''));
             },
 
             /**

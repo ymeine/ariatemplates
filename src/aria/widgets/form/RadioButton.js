@@ -240,7 +240,7 @@ var ariaWidgetsFormCheckBox = require("./CheckBox");
                     this.evalCallback(this._cfg.onchange);
                 }
             }
-
+            
         }
     });
 })();

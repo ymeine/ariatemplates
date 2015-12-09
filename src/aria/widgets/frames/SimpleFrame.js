@@ -76,6 +76,9 @@ module.exports = Aria.classDefinition({
          */
         writeMarkupBegin : function (out) {
             var cfg = this._cfg;
+
+            var id = cfg.id;
+
             var state = cfg.stateObject;
             var sizeInfo = {
                 style : cfg.block ? 'display:block;' : '',
@@ -97,8 +100,13 @@ module.exports = Aria.classDefinition({
                         + 'border-right:0px;border-top-right-radius:0px;border-bottom-right-radius:0px;';
             }
 
-            out.write('<span ' + (sizeInfo.style ? 'style="' + sizeInfo.style + '"' : '') + 'class="'
-                    + sizeInfo.className + '">');
+            out.write(
+                '<span '
+                + (id ? 'id="' + id + '"' : '')
+                + (sizeInfo.style ? 'style="' + sizeInfo.style + '"' : '')
+                + 'class="' + sizeInfo.className
+                + '">'
+            );
             if (verticalAlignApplied) {
                 var innerHeight = state.innerHeight;
                 if (ariaUtilsType.isNumber(innerHeight)) {
