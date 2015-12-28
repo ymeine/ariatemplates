@@ -273,11 +273,6 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                 // global navigation is disabled in case of a modal popup
                 navManager.setModalBehaviour(true);
 
-                utilsEvent.addListener(this._document.body, "focusin", {
-                    fn : this.onDocumentFocusIn,
-                    scope : this
-                });
-
                 utilsEvent.addListener(this._document.body, "keydown", {
                     fn : this.onDocumentKeyDown,
                     scope : this
@@ -304,10 +299,6 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                 });
                 // restore globalKeyMap
                 navManager.setModalBehaviour(false);
-
-                utilsEvent.removeListener(this._document.body, "focusin", {
-                    fn : this.onDocumentFocusIn
-                });
 
                 utilsEvent.removeListener(this._document.body, "keydown", {
                     fn : this.onDocumentKeyDown
@@ -385,7 +376,6 @@ var ariaUtilsDelegate = require("../utils/Delegate");
                                 return notifyTargetBehindModalPopup(popup);
                             }
 
-                            ariaTemplatesNavigationManager.focusFirst(popup.domElement, this._shiftKeyPressed);
                             break;
                         }
                     }
@@ -397,10 +387,16 @@ var ariaUtilsDelegate = require("../utils/Delegate");
              * @param {Object} event The DOM focusin event triggering the callback
              */
             onDocumentFocusIn : function (event) {
+                var self = this;
+
                 var domEvent = new ariaDomEvent(event);
                 var target = domEvent.target;
                 var popup = this.findParentPopup(target, function (popup) {
-                    ariaTemplatesNavigationManager.focusFirst(popup.domElement);
+                    if (self._shiftKeyPressed) {
+                        ariaTemplatesNavigationManager.focusNext(popup.popupContainer.getContainerElt(), true);
+                    } else {
+                        ariaTemplatesNavigationManager.focusFirst(popup.domElement, false);
+                    }
                     return popup;
                 });
                 if (popup) {

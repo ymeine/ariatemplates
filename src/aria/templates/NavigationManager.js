@@ -176,6 +176,9 @@ module.exports = Aria.classDefinition({
         setModalBehaviour : function (value) {
             this._hasModalBehaviour = value;
         },
+        focusNext : function () {
+            return this._focusNext.apply(this, arguments);
+        },
         /**
          * Focus the next element in the dom after / before current element
          * @protected
