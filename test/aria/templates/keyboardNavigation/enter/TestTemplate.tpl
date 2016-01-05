@@ -19,6 +19,7 @@
 }}
 
     {macro main ()}
+        <a href="#" {id "startingPoint" /}>Element before</a>
 
         {section {
             id : "mySectionOne",
@@ -64,8 +65,8 @@
         {section {
             id : "mySectionThree",
             macro : {
-              name : "sectionMacroTwo",
-              args : ["3"]
+              name : "sectionMacro",
+              args : ["3", true, true]
             },
             type : "DIV",
             "keyMap" : [{
@@ -100,55 +101,23 @@
             }]
         } /}
 
-	    {section {
-	        id : "logs",
-	        macro : "displayLogs",
-	        type : "DIV",
-	        bindRefreshTo: [{
-	            to : "logs",
-	            inside : data
-	        }]
-	    } /}
+      {section {
+          id : "logs",
+          macro : "displayLogs",
+          type : "DIV",
+          bindRefreshTo: [{
+              to : "logs",
+              inside : data
+          }]
+      } /}
 
     {/macro}
 
 
-    {macro sectionMacro (wId)}
 
-        {@aria:Button {
-           id : "myButton" + wId,
-           label: "Button",
-           onclick: {
-             fn: "updateLogs",
-                 scope: this,
-                 args: {
-                 log : "button"
-             }
-           }
-        } /}
-
-        {@aria:Link {
-           id : "myLink" + wId,
-           label: "Link",
-           onclick: {
-             fn: "updateLogs",
-                 scope: this,
-                 args: {
-                    log : "link"
-                 }
-           }
-        } /}
-
-        <a href="#" {id "anchor" + wId + "1"/}{on click {fn : "updateLogs", scope : this, args: {log : "anchorOne", preventDefault : true}} /}>first anchor</a>
-        <a href="#"
-            {id "anchor" + wId + "2"/}
-            {on keydown {fn : "updateLogsOnEnter", scope : this, args: {log : "anchorTwoOnEnter"}} /}
-            {on click {fn : "updateLogs", scope : this, args: {log : "anchorTwo", preventDefault : true}} /}
-        >second anchor</a>
-
-    {/macro}
-
-    {macro sectionMacroTwo (wId)}
+    {macro sectionMacro (wId, stopEvent, keyUp)}
+        {var doStopEvent = stopEvent != null ? stopEvent : false /}
+        {var onKeyUp = keyUp != null ? keyUp : false /}
 
         {@aria:Button {
            id : "myButton" + wId,
@@ -158,7 +127,7 @@
                  scope: this,
                  args: {
                  log : "button",
-                 stopEvent : true
+                 stopEvent : doStopEvent
              }
            }
         } /}
@@ -171,16 +140,22 @@
                  scope: this,
                  args: {
                     log : "link",
-                    stopEvent : true
+                    stopEvent : doStopEvent
                  }
            }
         } /}
 
-        <a href="#" {id "anchor" + wId + "1"/}{on click {fn : "updateLogs", scope : this, args: {log : "anchorOne", preventDefault : true, stopEvent : true}} /}>first anchor</a>
+        <a href="#" {id "anchor1" + wId/}{on click {fn : "updateLogs", scope : this, args: {log : "anchorOne", preventDefault : true, stopEvent : doStopEvent}} /}>first anchor</a>
+
+        {var anchorTwoOnKeyConfiguration = {fn : "updateLogsOnEnter", scope : this, args: {log : "anchorTwoOnEnter", stopEvent : doStopEvent}} /}
         <a href="#"
-            {id "anchor" + wId + "2"/}
-            {on keyup {fn : "updateLogsOnEnter", scope : this, args: {log : "anchorTwoOnEnter", stopEvent : true}} /}
-            {on click {fn : "updateLogs", scope : this, args: {log : "anchorTwo", preventDefault : true, stopEvent : true}} /}
+            {id "anchor2" + wId/}
+            {if onKeyUp}
+              {on keyup anchorTwoOnKeyConfiguration /}
+            {else/}
+              {on keydown anchorTwoOnKeyConfiguration /}
+            {/if}
+            {on click {fn : "updateLogs", scope : this, args: {log : "anchorTwo", preventDefault : true, stopEvent : doStopEvent}} /}
         >second anchor</a>
 
     {/macro}

@@ -13,324 +13,383 @@
  * limitations under the License.
  */
 
+
+var Aria = require('ariatemplates/Aria');
+
+var ariaUtilsArray = require('ariatemplates/utils/Array');
+
+
+
 /**
  * Test a complete table navigation
  */
-Aria.classDefinition({
-    $classpath : "test.aria.templates.keyboardNavigation.enter.EnterTestCase",
-    $extends : "aria.jsunit.TemplateTestCase",
-    $dependencies : ["aria.utils.FireDomEvent", "aria.core.Timer"],
+module.exports = Aria.classDefinition({
+    $classpath : 'test.aria.templates.keyboardNavigation.enter.EnterTestCase',
+    $extends : require('test/EnhancedRobotTestCase'),
+
     $constructor : function () {
-        this.$TemplateTestCase.constructor.call(this);
-        this._timer = aria.core.Timer;
+        // ------------------------------------------------------ initialization
+
+        this.$EnhancedRobotTestCase.constructor.call(this);
+
+        // ------------------------------------------------- internal attributes
+
+        this._elementsKeys = [
+            'button',
+            'link',
+            'firstAnchor',
+            'secondAnchor'
+        ];
+
+        this._elementToIdMap = {
+            button: 'myButton',
+            link: 'myLink',
+            firstAnchor: 'anchor1',
+            secondAnchor: 'anchor2'
+        };
+
+        this._useCases = this._getUseCases();
+
+        // ---------------------------------------------------------- attributes
+
         this.data = {
             logs : []
         };
+
+        // ---------------------------------------------------------- processing
+
         this.setTestEnv({
-            template : "test.aria.templates.keyboardNavigation.enter.TestTemplate",
+            template : 'test.aria.templates.keyboardNavigation.enter.TestTemplate',
             data : this.data
         });
     },
+
     $prototype : {
+        ////////////////////////////////////////////////////////////////////////
+        // Tests
+        ////////////////////////////////////////////////////////////////////////
 
         runTemplateTest : function () {
+            // -----------------------------------------------------------------
 
             // clean what was before
             this._disposeTestTemplate();
 
+            // -----------------------------------------------------------------
+
             // add globalKeyMap
             aria.templates.NavigationManager.addGlobalKeyMap({
-                key : "enter",
-                event : "keyup",
+                key : 'enter',
+                event : 'keyup',
                 callback : {
                     fn : function () {
-                        aria.utils.Json.add(this.data.logs, "global");
+                        aria.utils.Json.add(this.data.logs, 'global');
                     },
                     scope : this
                 }
             });
 
+            // -----------------------------------------------------------------
+
             this._loadTestTemplate({
-                fn : this._step0,
+                fn : this._executeSteps,
                 scope : this
             });
         },
 
-        _pressEnterOn : function (args) {
-            this.templateCtxt.$focus(args.id);
-            this._timer.addCallback({
-                fn : this._pressEnterOnCb1,
-                scope : this,
-                args : args,
-                delay : 200
-            });
+        _executeSteps : function () {
+            // --------------------------------------------------- destructuring
 
+            var useCases = this._useCases;
+
+            // ------------------------------------------------------ processing
+
+            this._localAsyncSequence(function (add) {
+                add(focusStartingPoint);
+                add(checkUseCases);
+            }, this.end);
+
+            // ------------------------------------------------- local functions
+
+            function focusStartingPoint(next) {
+                var startingPointElement = this.getElementById('startingPoint');
+                startingPointElement.focus();
+                this._waitForFocus(next, startingPointElement);
+            }
+
+            function checkUseCases(next) {
+                this._asyncIterate(useCases, function (next, useCase, useCaseIndex) {
+                    this._checkUseCase(next, useCaseIndex);
+                }, next, this);
+            }
         },
 
-        _pressEnterOnCb1 : function (args) {
-            var getter = (args.getter) ? args.getter : "getElementById";
-            var current = this[getter](args.id);
-            this.synEvent.type(current, "[enter]", {
-                fn : this._pressEnterOnCb2,
-                scope : this,
-                args : args
-            });
-        },
-        _pressEnterOnCb2 : function (evt, args) {
-            this.$callback(args.cb);
+        _checkUseCase: function (callback, useCaseIndex) {
+            // --------------------------------------------------- destructuring
+
+            var elementsKeys = this._elementsKeys;
+
+            // ------------------------------------------------------ processing
+
+            this._asyncIterate(elementsKeys, function (next, element, elementIndex) {
+                this._checkElement(next, useCaseIndex, elementIndex);
+            }, callback, this);
         },
 
-        // starting point
-        _step0 : function () {
-            this._pressEnterOn({
-                id : "myButton1",
-                cb : {
-                    fn : this._step1,
-                    scope : this
+        _checkElement: function (callback, useCaseIndex, elementIndex) {
+            // --------------------------------------------------- destructuring
+
+            var useCases = this._useCases;
+            var elementToIdMap = this._elementToIdMap;
+            var elementsKeys = this._elementsKeys;
+
+            var element = elementsKeys[elementIndex];
+
+            var useCase = useCases[useCaseIndex];
+            var expectedLogs = useCase[element];
+
+            // ------------------------------------------------------ processing
+
+            this._localAsyncSequence(function (add) {
+                add(performAction);
+                add(check);
+            }, callback);
+
+            // ------------------------------------------------- local functions
+
+            function performAction(next) {
+                var elementId = elementToIdMap[element] + (useCaseIndex + 1);
+
+                var args = {
+                    id: elementId,
+                    cb: next
+                };
+
+                if (element === 'link') {
+                    args.getter = 'getLink';
                 }
-            });
 
+                this._goToAndPressEnterOn(args, expectedLogs);
+            }
+
+            function check(next) {
+                var actualLogs = this.data.logs;
+                useCase[element] = {
+                    expected: expectedLogs,
+                    actual: actualLogs
+                };
+
+                this._checkLogs(expectedLogs, useCaseIndex, element);
+
+                next();
+            }
         },
 
-        _step1 : function () {
-            this.assertTrue(this.data.logs[0] == "button");
-            this.assertTrue(this.data.logs[1] == "section");
-            this.assertTrue(this.data.logs[2] == "global");
-            this.assertTrue(this.data.logs.length == 3);
-            aria.utils.Json.setValue(this.data, "logs", []);
+        _checkLogs : function (expectedItems, useCaseIndex, element) {
+            // --------------------------------------------------- destructuring
 
-            this._pressEnterOn({
-                id : "myLink1",
-                getter : "getLink",
-                cb : {
-                    fn : this._step2,
-                    scope : this
+            var data = this.data;
+            var logs = data.logs;
+
+            // ------------------------------------------------------ processing
+
+            // logging helper --------------------------------------------------
+
+            function buildMessage(base) {
+                var message = base;
+
+                if (useCaseIndex != null) {
+                    message += ' (use case index: ' + useCaseIndex + ')';
                 }
-            });
-        },
-        _step2 : function () {
-            this.assertTrue(this.data.logs[0] == "link");
-            this.assertTrue(this.data.logs[1] == "section");
-            this.assertTrue(this.data.logs[2] == "global");
-            this.assertTrue(this.data.logs.length == 3);
-            aria.utils.Json.setValue(this.data, "logs", []);
 
-            this._pressEnterOn({
-                id : "anchor11",
-                cb : {
-                    fn : this._step3,
-                    scope : this
+                if (element != null) {
+                    message += ' (element: ' + element + ')';
                 }
-            });
+
+                return message;
+            }
+
+            // check number of items -------------------------------------------
+
+            var expectedLength = expectedItems.length;
+            var actualLength = logs.length;
+
+            this.assertTrue(
+                actualLength == expectedLength,
+                buildMessage('Logs don\'t contain the expected number of messages: ' + actualLength + ' instead of ' + expectedLength + '.')
+            );
+
+            // check each item -------------------------------------------------
+
+            ariaUtilsArray.forEach(expectedItems, function (expectedItem, index) {
+                var actualItem = logs[index];
+
+                this.assertTrue(
+                    actualItem == expectedItem,
+                    buildMessage('Log item is not the expected one: "' + actualItem + '" instead of "' + expectedItem + '" (index: ' + index + ').')
+                );
+            }, this);
+
+            // clear logs ------------------------------------------------------
+
+            aria.utils.Json.setValue(data, 'logs', []);
         },
 
-        _step3 : function () {
-            this.assertTrue(this.data.logs[0] == "anchorOne");
-            this.assertTrue(this.data.logs[1] == "section");
-            this.assertTrue(this.data.logs[2] == "global");
-            this.assertTrue(this.data.logs.length == 3);
-            aria.utils.Json.setValue(this.data, "logs", []);
 
-            this._pressEnterOn({
-                id : "anchor12",
-                cb : {
-                    fn : this._step4,
-                    scope : this
-                }
-            });
-        },
-        _step4 : function () {
-            this.assertTrue(this.data.logs[0] == "anchorTwoOnEnter");
-            this.assertTrue(this.data.logs[1] == "anchorTwo");
-            this.assertTrue(this.data.logs[2] == "section");
-            this.assertTrue(this.data.logs[3] == "global");
-            this.assertTrue(this.data.logs.length == 4);
-            aria.utils.Json.setValue(this.data, "logs", []);
 
-            this._pressEnterOn({
-                id : "myButton2",
-                cb : {
-                    fn : this._step5,
-                    scope : this
-                }
-            });
+        ////////////////////////////////////////////////////////////////////////
+        // Actions
+        ////////////////////////////////////////////////////////////////////////
 
-        },
+        _goToAndPressEnterOn : function (args, expectedLogs) {
+            // -------------------------------------- input arguments processing
 
-        _step5 : function () {
-            this.assertTrue(this.data.logs[0] == "button");
-            this.assertTrue(this.data.logs[1] == "section");
-            this.assertTrue(this.data.logs.length == 2);
-            aria.utils.Json.setValue(this.data, "logs", []);
+            var id = args.id;
 
-            this._pressEnterOn({
-                id : "myLink2",
-                getter : "getLink",
-                cb : {
-                    fn : this._step6,
-                    scope : this
-                }
-            });
-        },
-        _step6 : function () {
-            this.assertTrue(this.data.logs[0] == "link");
-            this.assertTrue(this.data.logs[1] == "section");
-            this.assertTrue(this.data.logs.length == 2);
-            aria.utils.Json.setValue(this.data, "logs", []);
+            var getter = args.getter;
+            if (getter == null) {
+                getter = 'getElementById';
+            }
 
-            this._pressEnterOn({
-                id : "anchor21",
-                cb : {
-                    fn : this._step7,
-                    scope : this
-                }
-            });
-        },
+            // --------------------------------------------------- destructuring
 
-        _step7 : function () {
-            this.assertTrue(this.data.logs[0] == "anchorOne");
-            this.assertTrue(this.data.logs[1] == "section");
-            this.assertTrue(this.data.logs.length == 2);
-            aria.utils.Json.setValue(this.data, "logs", []);
+            var data = this.data;
+            var logs = data.logs;
 
-            this._pressEnterOn({
-                id : "anchor22",
-                cb : {
-                    fn : this._step8,
-                    scope : this
-                }
-            });
-        },
-        _step8 : function () {
-            this.assertTrue(this.data.logs[0] == "anchorTwoOnEnter");
-            this.assertTrue(this.data.logs[1] == "anchorTwo");
-            this.assertTrue(this.data.logs[2] == "section");
-            this.assertTrue(this.data.logs.length == 3);
-            aria.utils.Json.setValue(this.data, "logs", []);
+            // ------------------------------------------------------ processing
 
-            this._pressEnterOn({
-                id : "myButton3",
-                cb : {
-                    fn : this._step9,
-                    scope : this
-                }
+            var widgetElement = this[getter](id);
+
+            this._localAsyncSequence(function (add) {
+                add('_pressTab');
+                add('_waitForFocus', widgetElement, false);
+                add('_pressEnter');
+                add(waitForLogs);
+            }, function () {
+                this.$callback(args.cb);
             });
 
+            // ------------------------------------------------- local functions
+
+            function waitForLogs(next) {
+                this.waitFor({
+                    condition: function () {
+                        var newLogs = data.logs;
+                        var logsArrived = newLogs.length === expectedLogs.length;
+
+                        return logsArrived;
+                    },
+
+                    callback: next
+                });
+            }
         },
 
-        _step9 : function () {
-            this.assertTrue(this.data.logs[0] == "button");
-            this.assertTrue(this.data.logs.length == 1);
-            aria.utils.Json.setValue(this.data, "logs", []);
 
-            this._pressEnterOn({
-                id : "myLink3",
-                getter : "getLink",
-                cb : {
-                    fn : this._step10,
-                    scope : this
-                }
-            });
-        },
-        _step10 : function () {
-            this.assertTrue(this.data.logs[0] == "link");
-            this.assertTrue(this.data.logs.length == 1);
-            aria.utils.Json.setValue(this.data, "logs", []);
 
-            this._pressEnterOn({
-                id : "anchor31",
-                cb : {
-                    fn : this._step11,
-                    scope : this
-                }
-            });
-        },
+        ////////////////////////////////////////////////////////////////////////
+        //
+        ////////////////////////////////////////////////////////////////////////
 
-        _step11 : function () {
-            this.assertTrue(this.data.logs[0] == "anchorOne");
-            this.assertTrue(this.data.logs[1] == "section");
-            this.assertTrue(this.data.logs.length == 2);
-            aria.utils.Json.setValue(this.data, "logs", []);
+        _getUseCases : function () {
+            // ------------------------------------------------------ processing
 
-            this._pressEnterOn({
-                id : "anchor32",
-                cb : {
-                    fn : this._step12,
-                    scope : this
-                }
-            });
-        },
-        _step12 : function () {
-            this.assertTrue(this.data.logs[0] == "anchorTwo");
-            this.assertTrue(this.data.logs[1] == "anchorTwoOnEnter");
-            this.assertTrue(this.data.logs.length == 2);
-            aria.utils.Json.setValue(this.data, "logs", []);
+            var useCases = [];
 
-            this._pressEnterOn({
-                id : "myButton4",
-                cb : {
-                    fn : this._step13,
-                    scope : this
-                }
+            // 1 ---------------------------------------------------------------
+
+            useCases.push({
+                button: [
+                    'button',
+                    'section',
+                    'global'
+                ],
+                link: [
+                    'link',
+                    'section',
+                    'global'
+                ],
+                firstAnchor: [
+                    'anchorOne',
+                    'section',
+                    'global'
+                ],
+                secondAnchor: [
+                    'anchorTwoOnEnter',
+                    'anchorTwo',
+                    'section',
+                    'global'
+                ]
             });
 
-        },
+            // 2 ---------------------------------------------------------------
 
-        _step13 : function () {
-            this.assertTrue(this.data.logs[0] == "button");
-            this.assertTrue(this.data.logs[1] == "global");
-            this.assertTrue(this.data.logs.length == 2);
-            aria.utils.Json.setValue(this.data, "logs", []);
-
-            this._pressEnterOn({
-                id : "myLink4",
-                getter : "getLink",
-                cb : {
-                    fn : this._step14,
-                    scope : this
-                }
+            useCases.push({
+                button: [
+                    'button',
+                    'section'
+                ],
+                link: [
+                    'link',
+                    'section'
+                ],
+                firstAnchor: [
+                    'anchorOne',
+                    'section'
+                ],
+                secondAnchor: [
+                    'anchorTwoOnEnter',
+                    'anchorTwo',
+                    'section'
+                ]
             });
-        },
-        _step14 : function () {
-            this.assertTrue(this.data.logs[0] == "link");
-            this.assertTrue(this.data.logs[1] == "global");
-            this.assertTrue(this.data.logs.length == 2);
-            aria.utils.Json.setValue(this.data, "logs", []);
 
-            this._pressEnterOn({
-                id : "anchor41",
-                cb : {
-                    fn : this._step15,
-                    scope : this
-                }
+            // 3 ---------------------------------------------------------------
+
+            useCases.push({
+                button: [
+                    'button'
+                ],
+                link: [
+                    'link'
+                ],
+                firstAnchor: [
+                    'anchorOne',
+                    'section'
+                ],
+                secondAnchor: [
+                    'anchorTwo',
+                    'anchorTwoOnEnter'
+                ]
             });
-        },
 
-        _step15 : function () {
-            this.assertTrue(this.data.logs[0] == "section");
-            this.assertTrue(this.data.logs[1] == "anchorOne");
-            this.assertTrue(this.data.logs[2] == "global");
-            this.assertTrue(this.data.logs.length == 3);
-            aria.utils.Json.setValue(this.data, "logs", []);
+            // 4 ---------------------------------------------------------------
 
-            this._pressEnterOn({
-                id : "anchor42",
-                cb : {
-                    fn : this._step16,
-                    scope : this
-                }
+            useCases.push({
+                button: [
+                    'button',
+                    'global'
+                ],
+                link: [
+                    'link',
+                    'global'
+                ],
+                firstAnchor: [
+                    'section',
+                    'anchorOne',
+                    'global'
+                ],
+                secondAnchor: [
+                    'anchorTwoOnEnter',
+                    'section',
+                    'anchorTwo',
+                    'global'
+                ]
             });
-        },
-        _step16 : function () {
-            this.assertTrue(this.data.logs[0] == "anchorTwoOnEnter");
-            this.assertTrue(this.data.logs[1] == "section");
-            this.assertTrue(this.data.logs[2] == "anchorTwo");
-            this.assertTrue(this.data.logs[3] == "global");
-            this.assertTrue(this.data.logs.length == 4);
-            aria.utils.Json.setValue(this.data, "logs", []);
 
-            this.notifyTemplateTestEnd();
+            // ---------------------------------------------------------- return
+
+            return useCases;
         }
-
     }
 });
