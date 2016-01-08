@@ -199,6 +199,7 @@ module.exports = Aria.classDefinition({
 
                 // behavior ----------------------------------------------------
 
+                add('_testAutomaticFocus', dialog);
                 add('_testFocusRestoration', dialog);
                 add('_testFocusCycling', dialog);
 
@@ -415,6 +416,16 @@ module.exports = Aria.classDefinition({
 
                 add('_pressEnter');
                 add(isOpened.waitForFalse);
+            }, callback);
+        },
+
+        _testAutomaticFocus : function (callback, dialog) {
+            this._localAsyncSequence(function (add) {
+                add('_openDialog', dialog);
+
+                add('_checkWidgetIsFocused', dialog.id);
+
+                add('_closeDialog', dialog);
             }, callback);
         },
 
