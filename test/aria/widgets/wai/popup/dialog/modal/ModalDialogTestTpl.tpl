@@ -20,41 +20,27 @@
 
     {macro main()}
         {foreach dialog inArray this.data.dialogs}
-            <div>{call displayDialog(dialog) /}</div>
+            {call displayDialog(dialog) /}
         {/foreach}
+        <div id='container' style='width: 450px; height: 550px;'></div>
     {/macro}
 
     {macro displayDialog(dialog)}
-        <a href='#' {id dialog.elementBeforeId /}>Element before</a>
+        <div>
+            <a href='#' {id dialog.elementBeforeId /}>Element before</a>
 
-        {@aria:Button {
-            id: dialog.buttonId,
+            {@aria:Button {
+                id: dialog.buttonId,
 
-            label: dialog.buttonLabel,
-            onclick: {
-                scope: dialog,
-                fn: dialog.open
-            }
-        }/}
+                label: dialog.buttonLabel,
+                onclick: {
+                    scope: dialog,
+                    fn: dialog.open
+                }
+            }/}
+            </div>
 
-        {@aria:Dialog {
-            id : dialog.id,
-            waiAria: dialog.wai,
-
-            closable: true,
-            resizable: true,
-            modal : true,
-            width : 400,
-            maxHeight : 500,
-
-            title : dialog.title,
-
-            macro : 'dialogContent',
-
-            bind : {
-                'visible' : dialog.visibleBinding
-            }
-        }/}
+        {@aria:Dialog dialog.configuration /}
     {/macro}
 
     {macro dialogContent()}
