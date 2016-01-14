@@ -701,7 +701,6 @@ module.exports = Aria.classDefinition({
 
                 var hiddenElements = this._hiddenElements;
 
-                // var container = Aria.$window.document.body;
                 var container = popupContainer.getContainerElt();
                 var children = container.children;
 

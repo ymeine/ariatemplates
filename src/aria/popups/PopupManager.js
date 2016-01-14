@@ -415,8 +415,13 @@ var ariaCoreTimer = require("../core/Timer");
                     self.$raiseEvent(eventObject);
                     if (!eventObject.cancel) {
                         if (self._shiftKeyPressed) {
+                       		// ariaTemplatesNavigationManager.focusNext(popup.popupContainer.getContainerElt(), true);
+                        	// ariaTemplatesNavigationManager.focusNext(popup.domElement, true);
         	                ariaTemplatesNavigationManager.focusNext(popup.popupContainer.getContainerElt(), true);
     	                } else {
+    	                    // ariaTemplatesNavigationManager.focusNext(popup.popupContainer.getContainerElt(), false);
+                        	// ariaTemplatesNavigationManager.focusNext(popup.domElement, false);
+                        	// ariaTemplatesNavigationManager.focusFirst(popup.popupContainer.getContainerElt(), false);
 	                        ariaTemplatesNavigationManager.focusFirst(popup.domElement, false);
                     	}
                         return popup;
