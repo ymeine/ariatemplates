@@ -54,30 +54,37 @@ module.exports = Aria.classDefinition({
         this._tabIndex = '0';
         this._ariaRole = 'tabpanel';
 
-        var container = this._cfg.bind.selectedTab.inside;
-        var property = 'aria:tab_label_id';
-        ariaUtilsJson.addListener(container, property, {
-            fn: this._onAriaLabelChange,
-            scope: this
-        });
+        // ---------------------------------------------------------------------
 
-        var labelId = container[property];
-        if (labelId != null){
-            this._ariaLabelledBy = labelId;
+        // aria-controls (Tab) -------------------------------------------------
+
+        this._updateControlledTabPanelId();
+
+        // aria-labelledby (TabPanel) ------------------------------------------
+
+        // set listener
+        this._removeLabelIdListener = this._listenToLabelId();
+
+        // use it if already available
+        var id = this._getLabelId();
+        if (id != null) {
+            this._ariaLabelledBy = id; // used by base classes to generate markup
         }
     },
     /**
      * TabPanel destructor
      */
     $destructor : function () {
-
         if (this._frame) {
             this._frame.$dispose();
             this._frame = null;
         }
-        this.$Container.$destructor.call(this);
 
+        this._removeLabelIdListener();
+
+        this.$Container.$destructor.call(this);
     },
+
     $prototype : {
         /**
          * Skinnable class to use for this widget.
@@ -118,12 +125,115 @@ module.exports = Aria.classDefinition({
             }
         },
 
-        _onAriaLabelChange : function (arg) {
-            var id = arg.newValue;
-            this._updateAriaLabel(id);
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // Tab & TabPanel communication
+        ////////////////////////////////////////////////////////////////////////
+
+        _getConfigurationOfCommonBinding : function () {
+            return this._cfg.bind.selectedTab;
         },
 
-        _updateAriaLabel : function (id) {
+        _getCommonBindingMetaDataPropertyName : function (name) {
+            // --------------------------------------------------- destructuring
+
+            var configurationOfCommonBinding = this._getConfigurationOfCommonBinding();
+            var to = configurationOfCommonBinding.to;
+
+            // ------------------------------------------------------ processing
+
+            var property = 'aria:' + to + '_' + name;
+
+            // ---------------------------------------------------------- return
+
+            return property;
+        },
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // Tab controls id management (from TabPanel to Tab)
+        ////////////////////////////////////////////////////////////////////////
+
+        _getControlledTabPanelIdPropertyName : function () {
+            return this._getCommonBindingMetaDataPropertyName('controlledTabPanelId');
+        },
+
+        _updateControlledTabPanelId : function () {
+            // --------------------------------------------------- destructuring
+
+            var binding = this._getConfigurationOfCommonBinding();
+            var inside = binding.inside;
+
+            var property = this._getControlledTabPanelIdPropertyName();
+
+            var id = this._domId;
+
+            // ------------------------------------------------------ processing
+
+            ariaUtilsJson.setValue(inside, property, id);
+        },
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // Label id management (from TabPanel to Tab)
+        ////////////////////////////////////////////////////////////////////////
+
+        _getLabelIdPropertyName : function () {
+            return this._getCommonBindingMetaDataPropertyName('labelId');
+        },
+
+        _getLabelId : function () {
+            // --------------------------------------------------- destructuring
+
+            var configurationOfCommonBinding = this._getConfigurationOfCommonBinding();
+
+            var inside = configurationOfCommonBinding.inside;
+            var property = this._getLabelIdPropertyName();
+
+            // ------------------------------------------------------ processing
+
+            var id = inside[property];
+
+            // ---------------------------------------------------------- return
+
+            return id;
+        },
+
+        _listenToLabelId : function () {
+            // --------------------------------------------------- destructuring
+
+            var configurationOfCommonBinding = this._getConfigurationOfCommonBinding();
+
+            var inside = configurationOfCommonBinding.inside;
+            var property = this._getLabelIdPropertyName();
+
+            // ------------------------------------------------------ processing
+
+            var args = [inside, property, {
+                fn: this._onLabelIdChange,
+                scope: this
+            }];
+
+            ariaUtilsJson.addListener.apply(ariaUtilsJson, args);
+
+            var removeListener = function () {
+                ariaUtilsJson.removeListener.apply(ariaUtilsJson, args);
+            };
+
+            // ---------------------------------------------------------- return
+
+            return removeListener;
+        },
+
+        _onLabelIdChange : function (arg) {
+            var id = arg.newValue;
+            this._reactToLabelIdChange(id);
+        },
+
+        _reactToLabelIdChange : function (id) {
             // --------------------------------------------------- destructuring
 
             var element = this._domElt;
@@ -131,24 +241,33 @@ module.exports = Aria.classDefinition({
             // ---------------------------------------------------- facilitation
 
             if (id == null) {
-                var container = this._cfg.bind.selectedTab.inside;
-                var property = 'aria:tab_label_id';
-
-                id = container[property];
+                id = this._getLabelId();
             }
 
             // ------------------------------------------------------ processing
 
             if (element == null) {
-                this._ariaLabelledBy = id;
+                this._ariaLabelledBy = id; // XXX useless, too late apparently...
             } else {
                 element.setAttribute('aria-labelledby', id);
             }
         },
 
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        ////////////////////////////////////////////////////////////////////////
+
         _getSectionId : function () {
             return "__tabPanel_" + this._domId;
         },
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        ////////////////////////////////////////////////////////////////////////
 
         /**
          * Internal function to generate the internal widget markup
@@ -165,12 +284,6 @@ module.exports = Aria.classDefinition({
             });
             out.endSection();
             this._frame.writeMarkupEnd(out);
-
-            var container = cfg.bind.selectedTab.inside;
-            var property = 'aria:tabpanel_controls_id';
-            var id = this._domId;
-
-            ariaUtilsJson.setValue(container, property, id);
         },
 
         /**
