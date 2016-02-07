@@ -395,6 +395,11 @@ module.exports = Aria.classDefinition({
                 if (controls != null) {
                     out.write('aria-controls="' + controls + '" ');
                 }
+
+                var selected = this._ariaSelected;
+                if (selected != null && selected) {
+                    out.write('aria-selected="true"');
+                }
             }
 
             if (this._tabIndex != null) {

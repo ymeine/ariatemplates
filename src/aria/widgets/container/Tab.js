@@ -80,9 +80,18 @@ module.exports = Aria.classDefinition({
         this._tabIndex = '0'; // used by base classes to generate markup
         this._ariaRole = 'tab'; // used by base classes to generate markup
 
+        cfg = this._cfg;
+        var binding = cfg.bind.selectedTab;
+        var inside = binding.inside;
+        var to = binding.to;
+
+        if (inside[to] === cfg.tabId) {
+            this._ariaSelected = true; // used by base classes to generate markup
+        }
+
         // aria-labelledby (TabPanel) ------------------------------------------
 
-        this._updateTabPanelLabelId();
+        this._updateLabelId();
 
         // aria-controls (Tab) -------------------------------------------------
 
@@ -161,7 +170,7 @@ module.exports = Aria.classDefinition({
         // TabPanel label id management (from Tab to TabPanel)
         ////////////////////////////////////////////////////////////////////////
 
-        _getTabPanelLabelIdPropertyName : function () {
+        _getLabelIdPropertyName : function () {
             return this._getCommonBindingMetaDataPropertyName('labelId');
         },
 
@@ -169,7 +178,7 @@ module.exports = Aria.classDefinition({
             return this._domId + "_" + this._cfg.tabId;
         },
 
-        _updateTabPanelLabelId : function (selectedTab) {
+        _updateLabelId : function (selectedTab) {
             // --------------------------------------------------- destructuring
 
             var cfg = this._cfg;
@@ -192,7 +201,7 @@ module.exports = Aria.classDefinition({
 
             if (isSelected) {
                 var id = this._getFrameId();
-                var property = this._getTabPanelLabelIdPropertyName();
+                var property = this._getLabelIdPropertyName();
 
                 ariaUtilsJson.setValue(inside, property, id);
             }
@@ -257,22 +266,21 @@ module.exports = Aria.classDefinition({
         },
 
         _reactToControlledTabPanelIdChange : function (id) {
-            // --------------------------------------------------- destructuring
-
-            var element = this._domElt;
-
-            // ---------------------------------------------------- facilitation
-
-            if (id == null) {
-                id = this._getControlledTabPanelId();
+            var self = this;
+            function set() {
+                var element = self.getDom();
+                element.setAttribute('aria-controls', id);
             }
 
-            // ------------------------------------------------------ processing
-
-            if (element == null) {
-                this._ariaControls = id; // XXX useless, too late apparently...
+            if (this._domElt != null) {
+                set();
             } else {
-                element.setAttribute('aria-controls', id);
+                this._context.$onOnce({
+                    'Ready': {
+                        scope: this,
+                        fn: set
+                    }
+                });
             }
         },
 
@@ -335,10 +343,10 @@ module.exports = Aria.classDefinition({
                         element.removeAttribute('aria-selected');
                         // element.removeAttribute('tabindex');
                     }
-
-                    this._updateTabPanelLabelId(newValue);
                 }
             }
+
+            this._updateLabelId(newValue);
         },
 
 

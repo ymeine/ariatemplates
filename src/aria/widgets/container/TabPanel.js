@@ -119,7 +119,6 @@ module.exports = Aria.classDefinition({
                 this._context.$refresh({
                     section : this._getSectionId()
                 });
-
             } else {
                 this.$Container._onBoundPropertyChange.call(this, propertyName, newValue, oldValue);
             }
@@ -234,22 +233,21 @@ module.exports = Aria.classDefinition({
         },
 
         _reactToLabelIdChange : function (id) {
-            // --------------------------------------------------- destructuring
-
-            var element = this._domElt;
-
-            // ---------------------------------------------------- facilitation
-
-            if (id == null) {
-                id = this._getLabelId();
+            var self = this;
+            function set() {
+                var element = self.getDom();
+                element.setAttribute('aria-labelledby', id);
             }
 
-            // ------------------------------------------------------ processing
-
-            if (element == null) {
-                this._ariaLabelledBy = id; // XXX useless, too late apparently...
+            if (this._domElt != null) {
+                set();
             } else {
-                element.setAttribute('aria-labelledby', id);
+                this._context.$onOnce({
+                    'Ready': {
+                        scope: this,
+                        fn: set
+                    }
+                });
             }
         },
 
