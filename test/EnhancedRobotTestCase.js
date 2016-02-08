@@ -374,12 +374,28 @@ module.exports = Aria.classDefinition({
             this._pressWithShift(callback, this._pressTab);
         },
 
+        _pushEnter : function (callback) {
+            this._pushKey(callback, 'enter');
+        },
+
+        _releaseEnter : function (callback) {
+            this._releaseKey(callback, 'enter');
+        },
+
         _pressEnter : function (callback) {
             this._pressKey(callback, 'enter');
         },
 
         _pressEscape : function (callback) {
             this._pressKey(callback, 'escape');
+        },
+
+        _pressDownArrow : function (callback) {
+            this._pressKey(callback, 'down');
+        },
+
+        _pressBackspace : function (callback) {
+            this._pressKey(callback, 'backspace');
         },
 
         // mouse ---------------------------------------------------------------
