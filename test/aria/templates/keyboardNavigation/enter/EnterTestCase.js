@@ -16,9 +16,6 @@
 
 var Aria = require('ariatemplates/Aria');
 
-var ariaUtilsDom = require('ariatemplates/utils/Dom');
-var ariaUtilsFunction = require('ariatemplates/utils/Function');
-
 
 
 /**
@@ -26,12 +23,12 @@ var ariaUtilsFunction = require('ariatemplates/utils/Function');
  */
 module.exports = Aria.classDefinition({
     $classpath : "test.aria.templates.keyboardNavigation.enter.EnterTestCase",
-    $extends : require("ariatemplates/jsunit/RobotTestCase"),
+    $extends : require('test/EnhancedRobotTestCase'),
 
     $constructor : function () {
         // ------------------------------------------------------ initialization
 
-        this.$RobotTestCase.constructor.call(this);
+        this.$EnhancedRobotTestCase.constructor.call(this);
 
         // ------------------------------------------------- internal attributes
 
@@ -66,60 +63,6 @@ module.exports = Aria.classDefinition({
     },
 
     $prototype : {
-        ////////////////////////////////////////////////////////////////////////
-        // Library
-        ////////////////////////////////////////////////////////////////////////
-
-        _asyncIterate : function (array, callback, onend, thisArg) {
-            var index = 0;
-
-            function iterate () {
-                var currentIndex = index;
-
-                if (currentIndex >= array.length) {
-                    onend.call(thisArg, array);
-                } else {
-                    index++;
-
-                    var item = array[currentIndex];
-                    callback.call(thisArg, iterate, item, currentIndex, array);
-                }
-            }
-
-            iterate();
-        },
-
-        _asyncSequence : function (functions, callback, thisArg) {
-            this._asyncIterate(functions, function (next, fn) {
-                fn.call(this, next);
-            }, callback, thisArg);
-        },
-
-        _waitForFocus : function (callback, element, strict) {
-            if (strict == null) {
-                strict = true;
-            }
-
-            this.waitFor({
-                condition: function () {
-                    var activeElement = Aria.$global.window.document.activeElement;
-
-                    var result;
-                    if (strict) {
-                        result = activeElement === element;
-                    } else {
-                        result = ariaUtilsDom.isAncestor(activeElement, element);
-                    }
-
-                    return result;
-                },
-
-                callback: callback
-            });
-        },
-
-
-
         ////////////////////////////////////////////////////////////////////////
         // Tests
         ////////////////////////////////////////////////////////////////////////
