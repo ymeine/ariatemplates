@@ -189,6 +189,8 @@ module.exports = Aria.classDefinition({
             var inside = binding.inside;
             var to = binding.to;
 
+            var property = this._getLabelIdPropertyName();
+
             // ---------------------------------------------------- facilitation
 
             if (selectedTab == null) {
@@ -197,13 +199,16 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
-            var isSelected = selectedTab === tabId;
+            if (!selectedTab) {
+                ariaUtilsJson.setValue(inside, property, null);
+            } else {
+                var isSelected = selectedTab === tabId;
 
-            if (isSelected) {
-                var id = this._getFrameId();
-                var property = this._getLabelIdPropertyName();
+                if (isSelected) {
+                    var id = this._getFrameId();
 
-                ariaUtilsJson.setValue(inside, property, id);
+                    ariaUtilsJson.setValue(inside, property, id);
+                }
             }
         },
 
@@ -235,6 +240,12 @@ module.exports = Aria.classDefinition({
         },
 
         _listenToControlledTabPanelId : function () {
+            // ----------------------------------------------- early termination
+
+            if (!this._cfg.waiAria) {
+                return Aria.empty;
+            }
+
             // --------------------------------------------------- destructuring
 
             var configurationOfCommonBinding = this._getConfigurationOfCommonBinding();
@@ -269,7 +280,13 @@ module.exports = Aria.classDefinition({
             var self = this;
             function set() {
                 var element = self.getDom();
-                element.setAttribute('aria-controls', id);
+                var attributeName = 'aria-controls';
+
+                if (!id) {
+                    element.removeAttribute(attributeName);
+                } else {
+                    element.setAttribute(attributeName, id);
+                }
             }
 
             if (this._domElt != null) {

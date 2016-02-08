@@ -202,6 +202,12 @@ module.exports = Aria.classDefinition({
         },
 
         _listenToLabelId : function () {
+            // ----------------------------------------------- early termination
+
+            if (!this._cfg.waiAria) {
+                return Aria.empty;
+            }
+
             // --------------------------------------------------- destructuring
 
             var configurationOfCommonBinding = this._getConfigurationOfCommonBinding();
@@ -234,9 +240,16 @@ module.exports = Aria.classDefinition({
 
         _reactToLabelIdChange : function (id) {
             var self = this;
+
             function set() {
                 var element = self.getDom();
-                element.setAttribute('aria-labelledby', id);
+                var attributeName = 'aria-labelledby';
+
+                if (!id) {
+                    element.removeAttribute(attributeName);
+                } else {
+                    element.setAttribute(attributeName, id);
+                }
             }
 
             if (this._domElt != null) {
