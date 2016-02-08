@@ -25,13 +25,12 @@ var ariaUtilsType = require('ariatemplates/utils/Type');
 
 module.exports = Aria.classDefinition({
     $classpath : 'test.aria.widgets.wai.icon.IconTest',
-
-    $extends : require('ariatemplates/jsunit/RobotTestCase'),
+    $extends : require('test/EnhancedRobotTestCase'),
 
     $constructor : function () {
         // ------------------------------------------------------ initialization
 
-        this.$RobotTestCase.constructor.call(this);
+        this.$EnhancedRobotTestCase.constructor.call(this);
 
         // ------------------------------------------------- internal attributes
 
@@ -57,159 +56,6 @@ module.exports = Aria.classDefinition({
     },
 
     $prototype: {
-        ////////////////////////////////////////////////////////////////////////
-        // Library: helpers
-        ////////////////////////////////////////////////////////////////////////
-
-        getActiveElement : function () {
-            return Aria.$global.window.document.activeElement;
-        },
-
-        getWidgetDom : function (id) {
-            var widgetInstance = this.getWidgetInstance(id);
-            return widgetInstance.getDom();
-        },
-
-
-
-        ////////////////////////////////////////////////////////////////////////
-        // Library: asynchronous processing
-        ////////////////////////////////////////////////////////////////////////
-
-        _asyncIterate : function (array, callback, onend, thisArg) {
-            // -------------------------------------- input arguments processing
-
-            if (thisArg === undefined) {
-                thisArg = this;
-            }
-
-            // ------------------------------------------------------ processing
-
-            var index = 0;
-
-            function iterate () {
-                var currentIndex = index;
-
-                if (currentIndex >= array.length) {
-                    onend.call(thisArg, array);
-                } else {
-                    index++;
-
-                    var item = array[currentIndex];
-                    callback.call(thisArg, iterate, item, currentIndex, array);
-                }
-            }
-
-            iterate();
-        },
-
-        _asyncSequence : function (functions, callback, thisArg) {
-            this._asyncIterate(functions, function (next, fn) {
-                fn.call(this, next);
-            }, callback, thisArg);
-        },
-
-        _localAsyncSequence : function (create, callback) {
-            // ------------------------------------------------------ processing
-
-            var self = this;
-
-            var sequence = [];
-
-            function add(fn) {
-                if (ariaUtilsType.isString(fn)) {
-                    fn = self[fn];
-                }
-
-                if (arguments.length > 1) {
-                    var boundArguments = Array.prototype.slice.call(arguments, 1);
-                    fn = self._partializeAsynchronousFunction(fn, boundArguments);
-                }
-
-                sequence.push(fn);
-            }
-
-            create.call(this, add);
-
-            // ------------------------------------------------------ delegation
-
-            return this._asyncSequence(sequence, callback, this);
-        },
-
-        _partializeAsynchronousFunction : function (fn, boundArguments) {
-            return function (next) {
-                var additionalArguments = Array.prototype.slice.call(arguments, 1);
-
-                var allArguments = [];
-                allArguments.push(next);
-                allArguments.push.apply(allArguments, boundArguments);
-                allArguments.push.apply(allArguments, additionalArguments);
-
-                return fn.apply(this, allArguments);
-            };
-        },
-
-
-
-        ////////////////////////////////////////////////////////////////////////
-        // Library: Wait & check
-        ////////////////////////////////////////////////////////////////////////
-
-        _waitForFocus : function (callback, element, strict, thisArg) {
-            // -------------------------------------- input arguments processing
-
-            if (strict == null) {
-                strict = true;
-            }
-
-            if (thisArg === undefined) {
-                thisArg = this;
-            }
-
-            // ------------------------------------------------------ processing
-
-            this.waitFor({
-                scope: thisArg,
-                condition: condition,
-                callback: callback
-            });
-
-            // -----------------------------------------------------------------
-
-            function condition() {
-                var activeElement = this.getActiveElement();
-
-                var result;
-                if (strict) {
-                    result = activeElement === element;
-                } else {
-                    result = ariaUtilsDom.isAncestor(activeElement, element);
-                }
-
-                return result;
-            }
-        },
-
-
-
-        ////////////////////////////////////////////////////////////////////////
-        // Library: User actions
-        ////////////////////////////////////////////////////////////////////////
-
-        _pressTab : function (callback) {
-            this.synEvent.type(null, '[tab]', callback);
-        },
-
-        _pressEnter : function (callback) {
-            this.synEvent.type(null, '[enter]', callback);
-        },
-
-        _pressSpace : function (callback) {
-            this.synEvent.type(null, '[space]', callback);
-        },
-
-
-
         ////////////////////////////////////////////////////////////////////////
         // Tests
         ////////////////////////////////////////////////////////////////////////
@@ -284,12 +130,12 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------- information retrieval
 
-            var widgetDom = this.getWidgetDom(id);
+            var widgetDom = this._getWidgetDom(id);
             var elementBefore = this.getElementById('before_' + id);
 
             // ------------------------------------------------------ processing
 
-            var previousActiveElement = this.getActiveElement();
+            var previousActiveElement = this._getActiveElement();
 
            this._localAsyncSequence(function (add) {
                 add(focusElementBefore);
@@ -308,7 +154,7 @@ module.exports = Aria.classDefinition({
             function waitForFocusChange(next) {
                 this.waitFor({
                     condition: function () {
-                        var activeElement = this.getActiveElement();
+                        var activeElement = this._getActiveElement();
 
                         return activeElement != previousActiveElement;
                     },
@@ -321,7 +167,7 @@ module.exports = Aria.classDefinition({
                 var condition;
                 var message;
 
-                var activeElement = this.getActiveElement();
+                var activeElement = this._getActiveElement();
 
                 condition = ariaUtilsDom.isAncestor(activeElement, widgetDom);
                 if (waiAria) {
