@@ -113,7 +113,7 @@ Dialog.prototype.open = function () {
 ////////////////////////////////////////////////////////////////////////////////
 
 module.exports = Aria.classDefinition({
-    $classpath : "test.aria.widgets.wai.popup.dialog.modal.ModalDialogTest",
+    $classpath : 'test.aria.widgets.wai.popup.dialog.modal.ModalDialogTest',
     $extends : require('test/EnhancedRobotTestCase'),
 
     $constructor : function () {
@@ -137,35 +137,6 @@ module.exports = Aria.classDefinition({
     },
 
     $prototype : {
-        ////////////////////////////////////////////////////////////////////////
-        // Library: Dialog management
-        ////////////////////////////////////////////////////////////////////////
-
-        _getDialogInstance : function (dialog) {
-            // ------------------------------------------------------ processing
-
-            var dialogInstance = null;
-
-            var popups = ariaPopupsPopupManager.openedPopups;
-
-            for (var index = 0, length = popups.length; index < length; index++) {
-                var popup = popups[index];
-
-                var currentDialog = popup._parentDialog;
-                var config = currentDialog._cfg;
-
-                if (config.id === dialog) {
-                    dialogInstance = currentDialog;
-                }
-            }
-
-            // ---------------------------------------------------------- return
-
-            return dialogInstance;
-        },
-
-
-
         ////////////////////////////////////////////////////////////////////////
         // Tests
         ////////////////////////////////////////////////////////////////////////
@@ -198,6 +169,10 @@ module.exports = Aria.classDefinition({
 
 
 
+        ////////////////////////////////////////////////////////////////////////
+        //
+        ////////////////////////////////////////////////////////////////////////
+
         _testLabel : function (callback, dialog) {
             // --------------------------------------------------- configuration
 
@@ -217,7 +192,7 @@ module.exports = Aria.classDefinition({
                 add('_closeDialog', dialog);
             }, callback);
 
-            // -----------------------------------------------------------------
+            // ------------------------------------------------- local functions
 
             function check(next) {
                 var dialogInstance = this._getDialogInstance(id);
@@ -276,35 +251,34 @@ module.exports = Aria.classDefinition({
 
             this._localAsyncSequence(function (add) {
                 add('_openDialog', dialog);
-                add(getChildrenElements);
-                add(checkWhenOpen);
+                add(this._createAsyncWrapper(getChildrenElements));
+                add(this._createAsyncWrapper(checkWhenOpen));
+
                 add('_closeDialog', dialog);
-                add(checkWhenClosed);
+                add(this._createAsyncWrapper(checkWhenClosed));
             }, callback);
+
+            // ------------------------------------------------- local functions
 
             // -----------------------------------------------------------------
 
-            function getChildrenElements(next) {
+            function getChildrenElements() {
                 widgetDom = this._getWidgetDom(id);
 
                 var parentElement = widgetDom.parentElement;
                 children = parentElement.children;
-
-                next();
             }
 
-            function checkWhenOpen(next) {
+            function checkWhenOpen() {
                 checkChildren.call(this, function (element) {
                     return wai && element !== widgetDom;
                 });
-                next();
             }
 
-            function checkWhenClosed(next) {
+            function checkWhenClosed() {
                 checkChildren.call(this, function (element) {
                     return false;
                 });
-                next();
             }
 
             // -----------------------------------------------------------------
@@ -347,6 +321,7 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
+            var isOpen = this._createIsOpenPredicate(dialog.id);
 
             this._localAsyncSequence(function (add) {
                 if (wai) {
@@ -354,19 +329,9 @@ module.exports = Aria.classDefinition({
                     add('_testCloseIcon', dialog);
                 } else {
                     add('_openDialog', dialog);
+
                     add('_pressEnter');
-
-                    add(function (next) {
-                        var message = 'Dialog with id "%1" should be opened, since no icon should have been focused.';
-                        message = ariaUtilsString.substitute(message, [
-                            dialog.id
-                        ]);
-                        this._waitAndCheck(next, condition, message);
-
-                        function condition() {
-                            return this._isDialogOpened(dialog);
-                        }
-                    });
+                    add(isOpen.waitAndAssertTrue);
 
                     add('_closeDialog', dialog);
                 }
@@ -374,44 +339,55 @@ module.exports = Aria.classDefinition({
         },
 
         _testMaximizeIcon : function (callback, dialog) {
+            // ------------------------------------------------------ processing
+
+            // -----------------------------------------------------------------
+
+            var isMaximized = this._createPredicate(function () {
+                var dialogInstance = this._getDialogInstance(dialog.id);
+                return dialogInstance._cfg.maximized;
+            }, function (shouldBeTrue) {
+                return ariaUtilsString.substitute('Dialog with id "%1" should%2be maximized.', [
+                    dialog.id,
+                    shouldBeTrue ? ' ' : ' not '
+                ]);
+            });
+
+            // -----------------------------------------------------------------
+
             this._localAsyncSequence(function (add) {
                 add('_openDialog', dialog);
                 add('_navigateForward');
+
                 add('_pressEnter');
-                add('_checkDialogIsMaximized', dialog, true);
+                add(isMaximized.waitAndAssertTrue);
+
                 add('_pressEnter');
-                add('_checkDialogIsMaximized', dialog, false);
+                add(isMaximized.waitAndAssertFalse);
+
                 add('_closeDialog', dialog);
             }, callback);
         },
 
         _testCloseIcon : function (callback, dialog) {
+            var isOpen = this._createIsOpenPredicate(dialog.id);
+
             this._localAsyncSequence(function (add) {
                 add('_openDialog', dialog);
+
                 add('_pressEnter');
-                add('_checkDialogIsClosed', dialog);
+                add(isOpen.waitAndAssertFalse);
             }, callback);
         },
 
         _testAutomaticFocus : function (callback, dialog) {
-            // -----------------------------------------------------------------
-
             this._localAsyncSequence(function (add) {
                 add('_openDialog', dialog);
-                add(check);
+
+                add('_checkWidgetIsFocused', dialog.id);
+
                 add('_closeDialog', dialog);
             }, callback);
-
-            // -----------------------------------------------------------------
-
-            function check(next) {
-                var activeElement = this._getActiveElement();
-                var widgetDom = this._getWidgetDom(dialog.id);
-
-                this.assertTrue(ariaUtilsDom.isAncestor(activeElement, widgetDom), 'Focus should be inside the dialog.');
-
-                next();
-            }
         },
 
         _testFocusCycling : function (callback, dialog) {
@@ -426,76 +402,38 @@ module.exports = Aria.classDefinition({
         },
 
         _testFocusRestoration : function (callback, dialog) {
+            // ------------------------------------------------------ processing
+
+            // -----------------------------------------------------------------
+
+            var openingElement;
+
+            var isOpeningElementFocused = this._createPredicate(function () {
+                return this._getActiveElement() === openingElement;
+            }, function () {
+                return 'Focus was not restored properly on the button after closing the dialog.';
+            });
+
             // -----------------------------------------------------------------
 
             this._localAsyncSequence(function (add) {
+                add(getOpeningElement);
+
                 add('_openDialog', dialog);
                 add('_closeDialog', dialog);
-                add(check);
+
+                add(isOpeningElementFocused.waitAndAssertTrue);
             }, callback);
 
-            // -----------------------------------------------------------------
+            // ------------------------------------------------- local functions
 
-            function check(next) {
-                var activeElement = this._getActiveElement();
-
+            function getOpeningElement(next) {
                 this._localAsyncSequence(function (add) {
                     add('_focusWidget', dialog.buttonId);
-                    add(function (next) {
-                        var openingElement = this._getActiveElement();
-
-                        this.assertTrue(activeElement === openingElement, 'Focus was not restored properly on the button after closing the dialog.');
-                        next();
-                    });
+                    add(this._createAsyncWrapper(function () {
+                        openingElement = this._getActiveElement();
+                    }));
                 }, next);
-            }
-        },
-
-
-
-        ////////////////////////////////////////////////////////////////////////
-        // Assertions
-        ////////////////////////////////////////////////////////////////////////
-
-        _checkDialogIsMaximized : function (callback, dialog, shouldBeMaximized) {
-            // -------------------------------------- input arguments processing
-
-            if (shouldBeMaximized == null) {
-                shouldBeMaximized = true;
-            }
-
-            // ------------------------------------------------------ processing
-
-            var dialogInstance = this._getDialogInstance(dialog.id);
-
-            var message = 'Dialog with id "%1" should%2be maximized.';
-            message = ariaUtilsString.substitute(message, [
-                dialog.id,
-                shouldBeMaximized ? ' ' : ' not '
-            ]);
-
-            this._waitAndCheck(callback, condition, message);
-
-            // -----------------------------------------------------------------
-
-            function condition() {
-                return dialogInstance._cfg.maximized === shouldBeMaximized;
-            }
-        },
-
-        _checkDialogIsClosed : function (callback, dialog) {
-            // -----------------------------------------------------------------
-
-            var message = 'Dialog with id "%1" should be closed.';
-            message = ariaUtilsString.substitute(message, [
-                dialog.id
-            ]);
-            this._waitAndCheck(callback, condition, message);
-
-            // -----------------------------------------------------------------
-
-            function condition() {
-                return this._isDialogClosed(dialog);
             }
         },
 
@@ -506,60 +444,33 @@ module.exports = Aria.classDefinition({
         ////////////////////////////////////////////////////////////////////////
 
         _openDialog : function (callback, dialog) {
+            var isOpen = this._createIsOpenPredicate(dialog.id);
+
             this._localAsyncSequence(function (add) {
                 add('_focusWidget', dialog.buttonId);
                 add('_pressEnter');
-                add('_waitForDialogOpened', dialog);
+                add(isOpen.waitForTrue);
             }, callback);
         },
 
         _closeDialog : function (callback, dialog) {
+            var isOpen = this._createIsOpenPredicate(dialog.id);
+
             this._localAsyncSequence(function (add) {
                 add('_pressEscape');
-                add('_waitForDialogClosed', dialog);
+                add(isOpen.waitForFalse);
             }, callback);
         },
 
-
-
-        _isDialogOpened : function (dialog) {
-            return this._getDialogInstance(dialog.id) != null;
-        },
-
-        _isDialogClosed : function (dialog) {
-            return !this._isDialogOpened(dialog);
-        },
-
-        _waitForDialogOpened : function (callback, dialog) {
-            // -----------------------------------------------------------------
-
-            this.waitFor({
-                scope: this,
-                condition: condition,
-                callback: callback
-            });
-
-            // -----------------------------------------------------------------
-
-            function condition() {
-                return this._isDialogOpened(dialog);
-            }
-        },
-
-        _waitForDialogClosed : function (callback, dialog) {
-            // -----------------------------------------------------------------
-
-            this.waitFor({
-                scope: this,
-                condition: condition,
-                callback: callback
-            });
-
-            // -----------------------------------------------------------------
-
-            function condition() {
-                return this._isDialogClosed(dialog);
-            }
+        _createIsOpenPredicate : function (id) {
+            return this._createPredicate(function () {
+                return this._getDialogInstance(id) != null;
+            }, function (shouldBeTrue) {
+                return ariaUtilsString.substitute('Dialog with id "%1" should be %2.', [
+                    id,
+                    shouldBeTrue ? 'opened' : 'closed'
+                ]);
+            }, this);
         }
     }
 });
