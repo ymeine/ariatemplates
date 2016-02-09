@@ -19,8 +19,9 @@ var ariaUtilsJson = require('ariatemplates/utils/Json');
 var ariaUtilsArray = require('ariatemplates/utils/Array');
 var ariaUtilsString = require('ariatemplates/utils/String');
 var ariaUtilsType = require('ariatemplates/utils/Type');
-
 var ariaUtilsDom = require('ariatemplates/utils/Dom');
+
+var ariaPopupsPopupManager = require('ariatemplates/popups/PopupManager');
 
 var ariaJsunitRobotTestCase = require('ariatemplates/jsunit/RobotTestCase');
 
@@ -53,7 +54,8 @@ function createAsyncWrapper(fn) {
 	// -------------------------------------------------------------- processing
 
 	function wrapper(callback) {
-		var result = fn.apply(this, arguments);
+		var args = Array.prototype.slice.call(arguments, 1);
+		var result = fn.apply(this, args);
 		callback(result);
 	}
 
@@ -99,6 +101,16 @@ var prototype = {
 
 
 	////////////////////////////////////////////////////////////////////////////
+	// Template
+	////////////////////////////////////////////////////////////////////////////
+
+	_refresh : function () {
+		this.templateCtxt.$refresh();
+	},
+
+
+
+	////////////////////////////////////////////////////////////////////////////
 	// Widgets
 	////////////////////////////////////////////////////////////////////////////
 
@@ -113,6 +125,29 @@ var prototype = {
 
 		return actualId;
 	},
+
+    _getDialogInstance : function (dialog) {
+        // ---------------------------------------------------------- processing
+
+        var dialogInstance = null;
+
+        var popups = ariaPopupsPopupManager.openedPopups;
+
+        for (var index = 0, length = popups.length; index < length; index++) {
+            var popup = popups[index];
+
+            var currentDialog = popup._parentDialog;
+            var config = currentDialog._cfg;
+
+            if (config.id === dialog) {
+                dialogInstance = currentDialog;
+            }
+        }
+
+        // -------------------------------------------------------------- return
+
+        return dialogInstance;
+    },
 
 
 
@@ -217,9 +252,16 @@ var prototype = {
 
 		// ----------------------------------------------------- local functions
 
-		function add(fn) {
-			if (ariaUtilsType.isString(fn)) {
-				fn = self[fn];
+		function add(fnOrName) {
+			var fn;
+			if (ariaUtilsType.isString(fnOrName)) {
+				fn = self[fnOrName];
+			} else {
+				fn = fnOrName;
+			}
+
+			if (ariaUtilsType.isFunction(fn.async)) {
+				fn = fn.async;
 			}
 
 			if (arguments.length > 1) {
@@ -325,6 +367,11 @@ var prototype = {
 		// -------------------------------------------------------------- return
 
 		return result;
+	},
+
+	_isWidgetFocused : function (id) {
+		var element = this._getWidgetDom(id);
+		return this._isFocused(element, false);
 	},
 
 	_waitAndCheck : function (callback, condition, message, thisArg) {
@@ -558,10 +605,6 @@ var prototype = {
 	},
 
 	_checkWidgetIsFocused : function (callback, id) {
-		// ----------------------------------------------- information retrieval
-
-		var widgetDom = this._getWidgetDom(id);
-
 		// ---------------------------------------------------------- processing
 
 		var message = 'Widget with id "%1" should be focused.';
@@ -572,7 +615,7 @@ var prototype = {
 		// ----------------------------------------------------- local functions
 
 		function condition() {
-			return this._isFocused(widgetDom, false);
+			return this._isWidgetFocused(id);
 		}
 	},
 
@@ -621,55 +664,111 @@ var prototype = {
 
 		var self = this;
 
-		function check() {
-			var result = predicate.call(thisArg);
+		// ---------------------------------------------------------------------
+
+		function isTrue() {
+			var result = predicate.apply(thisArg, arguments);
 			return result;
 		}
-		this._createAsyncWrapper(check);
+		this._createAsyncWrapper(isTrue);
 
-		function wait(callback) {
+		function isFalse() {
+			return !isTrue.apply(thisArg, arguments);
+		}
+		this._createAsyncWrapper(isFalse);
+
+		// ---------------------------------------------------------------------
+
+		function _waitFor(callback, predicate, args) {
+			args = Array.prototype.slice.call(args, 1);
+
 			self.waitFor({
 				scope: thisArg,
-				condition: check,
+				condition: {
+					fn: predicate,
+					args: args
+				},
 				callback: callback
 			});
 		}
 
-		function waitAndAssert(callback) {
-			self._localAsyncSequence(function (add) {
-				add(wait);
-				add(assertTrue.async);
-			}, callback);
+		function waitForTrue(callback) {
+			_waitFor(callback, isTrue, arguments);
 		}
 
+		function waitForFalse(callback) {
+			_waitFor(callback, isFalse, arguments);
+		}
+
+		// ---------------------------------------------------------------------
+
 		function assertTrue() {
-			var result = check();
-			buildMessage.call(thisArg, result, 'assertTrue');
+			var result = isTrue.apply(thisArg, arguments);
+			var message = buildMessage.call(thisArg, true, arguments, result, 'assertTrue');
+
 			self.assertTrue(result, message);
 		}
 		this._createAsyncWrapper(assertTrue);
 
 		function assertFalse(callback) {
-			var result = check();
-			buildMessage.call(thisArg, result, 'assertFalse');
-			self.assertTrue(!result, message);
+			var result = isFalse.apply(thisArg, arguments);
+			var message = buildMessage.call(thisArg, false, arguments, result, 'assertFalse');
+
+			self.assertTrue(result, message);
 		}
 		this._createAsyncWrapper(assertFalse);
+
+		// ---------------------------------------------------------------------
+
+		function waitAndAssertTrue(callback) {
+			var args = Array.prototype.slice.call(arguments, 1);
+
+			self._localAsyncSequence(function (add) {
+				add.apply(null, [waitForTrue].concat(args));
+				add.apply(null, [assertTrue.async].concat(args));
+			}, callback);
+		}
+
+		function waitAndAssertFalse(callback) {
+			var args = Array.prototype.slice.call(arguments, 1);
+
+			self._localAsyncSequence(function (add) {
+				add.apply(null, [waitForFalse].concat(args));
+				add.apply(null, [assertFalse.async].concat(args));
+			}, callback);
+		}
 
 		// -------------------------------------------------------------- return
 
 		return {
+			// -----------------------------------------------------------------
+
 			predicate: predicate,
 			buildMessage: buildMessage,
 
-			check: check,
+			// -----------------------------------------------------------------
 
-			wait: wait,
-			waitAndAssert: waitAndAssert,
+			isTrue: isTrue,
+			isFalse: isFalse,
+			check: isTrue,
 
-			assert: assertTrue,
+			// -----------------------------------------------------------------
+
+			waitForTrue: waitForTrue,
+			waitForFalse: waitForFalse,
+			wait: waitForTrue,
+
+			// -----------------------------------------------------------------
+
 			assertTrue: assertTrue,
-			assertFalse: assertFalse
+			assertFalse: assertFalse,
+			assert: assertTrue,
+
+			// -----------------------------------------------------------------
+
+			waitAndAssertTrue: waitAndAssertTrue,
+			waitAndAssertFalse: waitAndAssertFalse,
+			waitAndAssert: waitAndAssertTrue
 		};
 	}
 };
@@ -679,6 +778,8 @@ var prototype = {
 ////////////////////////////////////////////////////////////////////////////////
 // Sync to async
 ////////////////////////////////////////////////////////////////////////////////
+
+createAsyncWrapper(prototype._refresh);
 
 createAsyncWrapper(prototype._checkAttribute);
 createAsyncWrapper(prototype._checkWidgetAttribute);
@@ -776,6 +877,27 @@ module.exports = Aria.classDefinition({
 	////////////////////////////////////////////////////////////////////////////
 	//
 	////////////////////////////////////////////////////////////////////////////
+
+	$constructor : function () {
+		// ------------------------------------------------------ initialization
+
+		this.$RobotTestCase.constructor.call(this);
+
+		// ------------------------------------------------- internal attributes
+
+		// ---------------------------------------------------------------------
+
+		var disposableObjects = [];
+        this._disposableObjects = disposableObjects;
+	},
+
+	$destructor : function () {
+        this.$RobotTestCase.$destructor.call(this);
+
+        ariaUtilsArray.forEach(this._disposableObjects, function (object) {
+            object.$dispose();
+        });
+    },
 
 	$prototype : prototype
 });
