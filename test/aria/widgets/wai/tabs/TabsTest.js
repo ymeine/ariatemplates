@@ -15,12 +15,8 @@
 
 var Aria = require('ariatemplates/Aria');
 
-var ariaUtilsJson = require('ariatemplates/utils/Json');
 var ariaUtilsArray = require('ariatemplates/utils/Array');
 var ariaUtilsString = require('ariatemplates/utils/String');
-var ariaUtilsType = require('ariatemplates/utils/Type');
-
-var ariaUtilsDom = require('ariatemplates/utils/Dom');
 
 
 
@@ -121,7 +117,7 @@ function Tab(waiAria, tabId, binding, label) {
 ////////////////////////////////////////////////////////////////////////////////
 
 module.exports = Aria.classDefinition({
-    $classpath : "test.aria.widgets.wai.tabs.TabsTest",
+    $classpath : 'test.aria.widgets.wai.tabs.TabsTest',
     $extends : require('test/EnhancedRobotTestCase'),
 
     $constructor : function () {
@@ -195,7 +191,7 @@ module.exports = Aria.classDefinition({
         },
 
         _runTestOnGroups : function (callback, test) {
-            var groups = this.templateCtxt.data.groups;
+            var groups = this._getData().groups;
             this._asyncIterate(groups, test, callback, this);
         },
 
@@ -221,9 +217,16 @@ module.exports = Aria.classDefinition({
         },
 
         _testTabNavigationForGroup : function (callback, group) {
+            // --------------------------------------------------- destructuring
+
             var tabsUnder = group.tabsUnder;
             var tabPanelId = group.tabPanel.id;
             var tabs = group.tabs;
+
+            var firstTabId = tabs[0].tabId;
+            var secondTabId = tabs[1].tabId;
+
+            // ------------------------------------------------------ processing
 
             this._localAsyncSequence(function (add) {
                 add('_focusElementBeforeGroup', group);
@@ -236,15 +239,15 @@ module.exports = Aria.classDefinition({
                     add('_checkElementIsFocused', 'inside_' + tabPanelId);
 
                     add('_pressTab');
-                    add('_checkWidgetIsFocused', tabs[0].tabId);
+                    add('_checkWidgetIsFocused', firstTabId);
 
                     add('_pressTab');
-                    add('_checkWidgetIsFocused', tabs[1].tabId);
+                    add('_checkWidgetIsFocused', secondTabId);
                 } else {
-                    add('_checkWidgetIsFocused', tabs[0].tabId);
+                    add('_checkWidgetIsFocused', firstTabId);
 
                     add('_pressTab');
-                    add('_checkWidgetIsFocused', tabs[1].tabId);
+                    add('_checkWidgetIsFocused', secondTabId);
 
                     add('_pressTab');
                     add('_checkWidgetIsFocused', tabPanelId);
@@ -256,72 +259,44 @@ module.exports = Aria.classDefinition({
         },
 
         _testKeyboardSelectionForGroup : function (callback, group) {
+            // --------------------------------------------------- destructuring
+
             var tabsUnder = group.tabsUnder;
             var tabPanelId = group.tabPanel.id;
             var tabs = group.tabs;
 
+            var firstTab = tabs[0];
+            var secondTab = tabs[1];
+
+            // ------------------------------------------------------ processing
+
+            var isNoTabSelected = this._createTabSelectedPredicate(group, null);
+            var isFirstTabSelected = this._createTabSelectedPredicate(group, firstTab);
+            var isSecondTabSelected = this._createTabSelectedPredicate(group, secondTab);
+
             this._localAsyncSequence(function (add) {
+                // -------------------------------------------------------------
+
                 add('_focusFirstTab', group);
-                add('_checkSelectedTab', group, null);
+                add(isNoTabSelected.waitAndAssertTrue);
+
+                // -------------------------------------------------------------
 
                 add('_pressEnter');
-                add('_checkSelectedTab', group, tabs[0]);
+                add(isFirstTabSelected.waitAndAssertTrue);
+
+                // -------------------------------------------------------------
 
                 add('_navigateForward');
                 add('_pressSpace');
-                add('_checkSelectedTab', group, tabs[1]);
+                add(isSecondTabSelected.waitAndAssertTrue);
+
+                // -------------------------------------------------------------
 
                 add('_navigateBackward');
                 add('_pressSpace');
-                add('_checkSelectedTab', group, tabs[0]);
+                add(isFirstTabSelected.waitAndAssertTrue);
             }, callback);
-        },
-
-        _checkSelectedTab : function (callback, group, tab) {
-            // ------------------------------------------- information retrieval
-
-            var selectedTab = this._readBinding(group.binding);
-            var id = (tab != null) ? tab.tabId : null;
-
-            // ------------------------------------------------------ processing
-
-            var message;
-            if (id == null) {
-                message = 'No tab should be selected, instead "%1" is.';
-            } else {
-                message = 'The wrong tab is selected: "%1" instead of "%2".';
-            }
-
-            message = ariaUtilsString.substitute(message, [selectedTab, id]);
-
-            this._waitAndCheck(callback, condition, message, this);
-
-            // -----------------------------------------------------------------
-
-            function condition () {
-                return this._isTabSelected(group, tab);
-            }
-        },
-
-        _isTabSelected : function (group, tab) {
-            // ------------------------------------------- information retrieval
-
-            var selectedTab = this._readBinding(group.binding);
-            var id = (tab != null) ? tab.tabId : null;
-
-            // ------------------------------------------------------ processing
-
-            var result;
-
-            if (id == null) {
-                result = selectedTab == null;
-            } else {
-                result = selectedTab === id;
-            }
-
-            // ---------------------------------------------------------- return
-
-            return result;
         },
 
 
@@ -354,21 +329,15 @@ module.exports = Aria.classDefinition({
             // ------------------------------------------------------ processing
 
             this._localAsyncSequence(function (add) {
-                add(checkRoles);
-                add(checkTabindex);
+                add(this._createAsyncWrapper(checkRoles));
+                add('_checkWidgetAttribute', tabPanel.id, 'tabindex', '0');
             }, callback);
 
-            // -----------------------------------------------------------------
+            // ------------------------------------------------- local functions
 
-            function checkRoles(next) {
+            function checkRoles() {
                 ariaUtilsArray.forEach(tabs, this._checkTabRole, this);
                 this._checkTabPanelRole(tabPanel);
-                next();
-            }
-
-            function checkTabindex(next) {
-                this._checkWidgetAttribute(tabPanel.id, 'tabindex', '0');
-                next();
             }
         },
 
@@ -518,6 +487,39 @@ module.exports = Aria.classDefinition({
         ////////////////////////////////////////////////////////////////////////
         // Local library
         ////////////////////////////////////////////////////////////////////////
+
+        _createTabSelectedPredicate : function (group, tab) {
+            // ------------------------------------------- information retrieval
+
+            var id = (tab != null) ? tab.tabId : null;
+
+            // ------------------------------------------------------ processing
+
+            return this._createPredicate(function () {
+                var selectedTab = this._readBinding(group.binding);
+
+                var result;
+
+                if (id == null) {
+                    result = selectedTab == null;
+                } else {
+                    result = selectedTab === id;
+                }
+
+                return result;
+            }, function (shouldBeTrue, args) {
+                var selectedTab = this._readBinding(group.binding);
+
+                var message;
+                if (id == null) {
+                    message = 'No tab should be selected, instead "%1" is.';
+                } else {
+                    message = 'The wrong tab is selected: "%1" instead of "%2".';
+                }
+
+                return ariaUtilsString.substitute(message, [selectedTab, id]);
+            });
+        },
 
         _focusElementBeforeGroup : function (callback, group) {
             // --------------------------------------------------- destructuring
