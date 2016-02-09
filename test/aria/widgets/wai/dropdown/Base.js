@@ -306,7 +306,7 @@ module.exports = Aria.classDefinition({
             this._localAsyncSequence(function (add) {
                 add('_focusWidget', id);
 
-                add('_pressDownArrow');
+                add('_pressDown');
                 if (shouldBeOpenOnDownArrow) {
                     add('_checkWidgetDropdown', id, true);
                     add('_pressShiftF10');
