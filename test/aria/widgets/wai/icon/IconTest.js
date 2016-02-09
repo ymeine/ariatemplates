@@ -17,9 +17,6 @@ var Aria = require('ariatemplates/Aria');
 
 var ariaUtilsString = require('ariatemplates/utils/String');
 var ariaUtilsJson = require('ariatemplates/utils/Json');
-var ariaUtilsDom = require('ariatemplates/utils/Dom');
-
-var ariaUtilsType = require('ariatemplates/utils/Type');
 
 
 
@@ -63,10 +60,19 @@ module.exports = Aria.classDefinition({
         runTemplateTest : function () {
             var useCases = this._useCases;
 
-            this._asyncIterate(useCases, function (next, useCase) {
-                this._testUseCase(next, useCase);
-            }, this.end);
+            this._asyncIterate(
+                useCases,
+                this._testUseCase,
+                this.end,
+                this
+            );
         },
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        ////////////////////////////////////////////////////////////////////////
 
         _testUseCase : function (callback, useCase) {
             this._localAsyncSequence(function (add) {
@@ -81,7 +87,7 @@ module.exports = Aria.classDefinition({
         _testLabel : function (callback, useCase) {
             // --------------------------------------------------- destructuring
 
-            var data = this.templateCtxt.data;
+            var data = this._getData();
 
             var id = useCase.id;
             var waiAria = useCase.waiAria;
@@ -135,13 +141,24 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
-            var previousActiveElement = this._getActiveElement();
+            var isIconFocused = this._createPredicate(function () {
+                return this._isWidgetFocused(id);
+            }, function (shouldBeTrue) {
+                return ariaUtilsString.substitute('Icon should%1be focused.', [
+                    shouldBeTrue ? ' ' : ' not '
+                ]);
+            });
 
-           this._localAsyncSequence(function (add) {
+            this._localAsyncSequence(function (add) {
                 add(focusElementBefore);
                 add('_pressTab');
-                add(waitForFocusChange);
-                add(check);
+                add('_waitForFocusChange');
+
+                if (waiAria) {
+                    add(isIconFocused.assertTrue);
+                } else {
+                    add(isIconFocused.assertFalse);
+                }
             }, callback);
 
             // -----------------------------------------------------------------
@@ -149,37 +166,6 @@ module.exports = Aria.classDefinition({
             function focusElementBefore(next) {
                 elementBefore.focus();
                 this._waitForFocus(next, elementBefore);
-            }
-
-            function waitForFocusChange(next) {
-                this.waitFor({
-                    condition: function () {
-                        var activeElement = this._getActiveElement();
-
-                        return activeElement != previousActiveElement;
-                    },
-                    callback: next,
-                    scope: this
-                });
-            }
-
-            function check(next) {
-                var condition;
-                var message;
-
-                var activeElement = this._getActiveElement();
-
-                condition = ariaUtilsDom.isAncestor(activeElement, widgetDom);
-                if (waiAria) {
-                    message = 'Icon should be focused.';
-                } else {
-                    condition = !condition;
-                    message = 'Icon should not be focused.';
-                }
-
-                this.assertTrue(condition, message);
-
-                next();
             }
         },
 
