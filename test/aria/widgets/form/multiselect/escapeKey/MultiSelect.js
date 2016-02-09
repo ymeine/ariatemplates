@@ -15,11 +15,7 @@
 
 var Aria = require('ariatemplates/Aria');
 
-var ariaUtilsJson = require('ariatemplates/utils/Json');
 var ariaUtilsString = require('ariatemplates/utils/String');
-var ariaUtilsDom = require('ariatemplates/utils/Dom');
-
-var ariaUtilsType = require('ariatemplates/utils/Type');
 
 
 
@@ -50,44 +46,24 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
+            var isOpen = this._createPredicate(function () {
+                return this._isWidgetDropdownPopupOpen(id);
+            }, function (shouldBeTrue) {
+                return ariaUtilsString.substitute(
+                    'Widget "%1" should have its dropdown %2',
+                    [id, shouldBeTrue ? 'open' : 'closed']
+                );
+            }, this);
+
             this._localAsyncSequence(function (add) {
                 add('_focusWidget', id);
 
                 add('_pressShiftF10');
-                add('_checkWidgetDropdownIsOpen', id, true);
+                add(isOpen.waitAndAssertTrue);
 
                 add('_pressEscape');
-                add('_checkWidgetDropdownIsOpen', id, false);
+                add(isOpen.waitAndAssertFalse);
             }, this.end);
-        },
-
-
-
-        ////////////////////////////////////////////////////////////////////////
-        //
-        ////////////////////////////////////////////////////////////////////////
-
-        _checkWidgetDropdownIsOpen : function (callback, id, shouldBeOpen) {
-            // -------------------------------------- input arguments processing
-
-            if (shouldBeOpen == null) {
-                shouldBeOpen = true;
-            }
-
-            // ------------------------------------------------------ processing
-
-            var message = ariaUtilsString.substitute(
-                'Widget "%0" should have its dropdown %2',
-                [id, shouldBeOpen ? 'open' : 'closed']
-            );
-
-            this._waitAndCheck(callback, condition, message, this);
-
-            // -----------------------------------------------------------------
-
-            function condition() {
-                return this._isWidgetDropdownPopupOpen(id) === shouldBeOpen;
-            }
         }
     }
 });
