@@ -16,13 +16,15 @@
 
 var Aria = require('ariatemplates/Aria');
 
+var ariaUtilsArray = require('ariatemplates/utils/Array');
+
 
 
 /**
  * Test a complete table navigation
  */
 module.exports = Aria.classDefinition({
-    $classpath : "test.aria.templates.keyboardNavigation.enter.EnterTestCase",
+    $classpath : 'test.aria.templates.keyboardNavigation.enter.EnterTestCase',
     $extends : require('test/EnhancedRobotTestCase'),
 
     $constructor : function () {
@@ -40,10 +42,10 @@ module.exports = Aria.classDefinition({
         ];
 
         this._elementToIdMap = {
-            button: "myButton",
-            link: "myLink",
-            firstAnchor: "anchor1",
-            secondAnchor: "anchor2"
+            button: 'myButton',
+            link: 'myLink',
+            firstAnchor: 'anchor1',
+            secondAnchor: 'anchor2'
         };
 
         this._useCases = this._getUseCases();
@@ -57,7 +59,7 @@ module.exports = Aria.classDefinition({
         // ---------------------------------------------------------- processing
 
         this.setTestEnv({
-            template : "test.aria.templates.keyboardNavigation.enter.TestTemplate",
+            template : 'test.aria.templates.keyboardNavigation.enter.TestTemplate',
             data : this.data
         });
     },
@@ -77,11 +79,11 @@ module.exports = Aria.classDefinition({
 
             // add globalKeyMap
             aria.templates.NavigationManager.addGlobalKeyMap({
-                key : "enter",
-                event : "keyup",
+                key : 'enter',
+                event : 'keyup',
                 callback : {
                     fn : function () {
-                        aria.utils.Json.add(this.data.logs, "global");
+                        aria.utils.Json.add(this.data.logs, 'global');
                     },
                     scope : this
                 }
@@ -102,7 +104,12 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
-            // steps -----------------------------------------------------------
+            this._localAsyncSequence(function (add) {
+                add(focusStartingPoint);
+                add(checkUseCases);
+            }, this.end);
+
+            // ------------------------------------------------- local functions
 
             function focusStartingPoint(next) {
                 var startingPointElement = this.getElementById('startingPoint');
@@ -112,28 +119,24 @@ module.exports = Aria.classDefinition({
 
             function checkUseCases(next) {
                 this._asyncIterate(useCases, function (next, useCase, useCaseIndex) {
-                    this._checkUseCase(useCaseIndex, next);
+                    this._checkUseCase(next, useCaseIndex);
                 }, next, this);
             }
-
-            // execution -------------------------------------------------------
-
-            var sequence = [];
-            sequence.push(focusStartingPoint);
-            sequence.push(checkUseCases);
-
-            this._asyncSequence(sequence, this.end, this);
         },
 
-        _checkUseCase: function (useCaseIndex, callback) {
+        _checkUseCase: function (callback, useCaseIndex) {
+            // --------------------------------------------------- destructuring
+
             var elementsKeys = this._elementsKeys;
 
+            // ------------------------------------------------------ processing
+
             this._asyncIterate(elementsKeys, function (next, element, elementIndex) {
-                this._checkElement(useCaseIndex, elementIndex, next);
+                this._checkElement(next, useCaseIndex, elementIndex);
             }, callback, this);
         },
 
-        _checkElement: function (useCaseIndex, elementIndex, callback) {
+        _checkElement: function (callback, useCaseIndex, elementIndex) {
             // --------------------------------------------------- destructuring
 
             var useCases = this._useCases;
@@ -147,7 +150,12 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
-            // steps -----------------------------------------------------------
+            this._localAsyncSequence(function (add) {
+                add(performAction);
+                add(check);
+            }, callback);
+
+            // ------------------------------------------------- local functions
 
             function performAction(next) {
                 var elementId = elementToIdMap[element] + (useCaseIndex + 1);
@@ -175,15 +183,6 @@ module.exports = Aria.classDefinition({
 
                 next();
             }
-
-            // execution -------------------------------------------------------
-
-            var sequence = [];
-            sequence.push(performAction);
-            sequence.push(check);
-            sequence.push(callback);
-
-            this._asyncSequence(sequence, callback, this);
         },
 
         _checkLogs : function (expectedItems, useCaseIndex, element) {
@@ -200,11 +199,11 @@ module.exports = Aria.classDefinition({
                 var message = base;
 
                 if (useCaseIndex != null) {
-                    message += " (use case index: " + useCaseIndex + ")";
+                    message += ' (use case index: ' + useCaseIndex + ')';
                 }
 
                 if (element != null) {
-                    message += " (element: " + element + ")";
+                    message += ' (element: ' + element + ')';
                 }
 
                 return message;
@@ -217,24 +216,23 @@ module.exports = Aria.classDefinition({
 
             this.assertTrue(
                 actualLength == expectedLength,
-                buildMessage("Logs don't contain the expected number of messages: " + actualLength + " instead of " + expectedLength + ".")
+                buildMessage('Logs don\'t contain the expected number of messages: ' + actualLength + ' instead of ' + expectedLength + '.')
             );
 
             // check each item -------------------------------------------------
 
-            for (var index = 0, length = expectedItems.length; index < length; index++) {
-                var expectedItem = expectedItems[index];
-
+            ariaUtilsArray.forEach(expectedItems, function (expectedItem, index) {
                 var actualItem = logs[index];
+
                 this.assertTrue(
                     actualItem == expectedItem,
-                    buildMessage("Log item is not the expected one: '" + actualItem + "' instead of '" + expectedItem + "' (index: " + index + ").")
+                    buildMessage('Log item is not the expected one: "' + actualItem + '" instead of "' + expectedItem + '" (index: ' + index + ').')
                 );
-            }
+            }, this);
 
             // clear logs ------------------------------------------------------
 
-            aria.utils.Json.setValue(data, "logs", []);
+            aria.utils.Json.setValue(data, 'logs', []);
         },
 
 
@@ -250,7 +248,7 @@ module.exports = Aria.classDefinition({
 
             var getter = args.getter;
             if (getter == null) {
-                getter = "getElementById";
+                getter = 'getElementById';
             }
 
             // --------------------------------------------------- destructuring
@@ -262,19 +260,16 @@ module.exports = Aria.classDefinition({
 
             var widgetElement = this[getter](id);
 
-            // steps -----------------------------------------------------------
+            this._localAsyncSequence(function (add) {
+                add('_pressTab');
+                add('_waitForFocus', widgetElement, false);
+                add('_pressEnter');
+                add(waitForLogs);
+            }, function () {
+                this.$callback(args.cb);
+            });
 
-            function pressTab(next) {
-                this.synEvent.type(null, "[tab]", next);
-            }
-
-            function waitForFocus(next) {
-                this._waitForFocus(next, widgetElement, false);
-            }
-
-            function pressEnter(next) {
-                this.synEvent.type(null, "[enter]", next);
-            }
+            // ------------------------------------------------- local functions
 
             function waitForLogs(next) {
                 this.waitFor({
@@ -288,18 +283,6 @@ module.exports = Aria.classDefinition({
                     callback: next
                 });
             }
-
-            // execution -------------------------------------------------------
-
-            var sequence = [];
-            sequence.push(pressTab);
-            sequence.push(waitForFocus);
-            sequence.push(pressEnter);
-            sequence.push(waitForLogs);
-
-            this._asyncSequence(sequence, function () {
-                this.$callback(args.cb);
-            }, this);
         },
 
 
@@ -317,25 +300,25 @@ module.exports = Aria.classDefinition({
 
             useCases.push({
                 button: [
-                    "button",
-                    "section",
-                    "global"
+                    'button',
+                    'section',
+                    'global'
                 ],
                 link: [
-                    "link",
-                    "section",
-                    "global"
+                    'link',
+                    'section',
+                    'global'
                 ],
                 firstAnchor: [
-                    "anchorOne",
-                    "section",
-                    "global"
+                    'anchorOne',
+                    'section',
+                    'global'
                 ],
                 secondAnchor: [
-                    "anchorTwoOnEnter",
-                    "anchorTwo",
-                    "section",
-                    "global"
+                    'anchorTwoOnEnter',
+                    'anchorTwo',
+                    'section',
+                    'global'
                 ]
             });
 
@@ -343,21 +326,21 @@ module.exports = Aria.classDefinition({
 
             useCases.push({
                 button: [
-                    "button",
-                    "section"
+                    'button',
+                    'section'
                 ],
                 link: [
-                    "link",
-                    "section"
+                    'link',
+                    'section'
                 ],
                 firstAnchor: [
-                    "anchorOne",
-                    "section"
+                    'anchorOne',
+                    'section'
                 ],
                 secondAnchor: [
-                    "anchorTwoOnEnter",
-                    "anchorTwo",
-                    "section"
+                    'anchorTwoOnEnter',
+                    'anchorTwo',
+                    'section'
                 ]
             });
 
@@ -365,18 +348,18 @@ module.exports = Aria.classDefinition({
 
             useCases.push({
                 button: [
-                    "button"
+                    'button'
                 ],
                 link: [
-                    "link"
+                    'link'
                 ],
                 firstAnchor: [
-                    "anchorOne",
-                    "section"
+                    'anchorOne',
+                    'section'
                 ],
                 secondAnchor: [
-                    "anchorTwo",
-                    "anchorTwoOnEnter"
+                    'anchorTwo',
+                    'anchorTwoOnEnter'
                 ]
             });
 
@@ -384,23 +367,23 @@ module.exports = Aria.classDefinition({
 
             useCases.push({
                 button: [
-                    "button",
-                    "global"
+                    'button',
+                    'global'
                 ],
                 link: [
-                    "link",
-                    "global"
+                    'link',
+                    'global'
                 ],
                 firstAnchor: [
-                    "section",
-                    "anchorOne",
-                    "global"
+                    'section',
+                    'anchorOne',
+                    'global'
                 ],
                 secondAnchor: [
-                    "anchorTwoOnEnter",
-                    "section",
-                    "anchorTwo",
-                    "global"
+                    'anchorTwoOnEnter',
+                    'section',
+                    'anchorTwo',
+                    'global'
                 ]
             });
 
