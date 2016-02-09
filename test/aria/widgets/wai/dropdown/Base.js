@@ -15,13 +15,8 @@
 
 var Aria = require('ariatemplates/Aria');
 
-var ariaUtilsDom = require('ariatemplates/utils/Dom');
-
 var ariaUtilsString = require('ariatemplates/utils/String');
-var ariaUtilsType = require('ariatemplates/utils/Type');
 var ariaUtilsArray = require('ariatemplates/utils/Array');
-
-var AppEnvironment = require('ariatemplates/core/AppEnvironment');
 
 var ariaResourcesHandlersLCResourcesHandler = require('ariatemplates/resources/handlers/LCResourcesHandler');
 var ariaResourcesHandlersLCRangeResourceHandler = require('ariatemplates/resources/handlers/LCRangeResourceHandler');
@@ -42,10 +37,9 @@ module.exports = Aria.classDefinition({
 
         this._waiAria = null;
 
-        var disposableObjects = [];
-        this._disposableObjects = disposableObjects;
-
         // ---------------------------------------------------------- processing
+
+        var disposableObjects = this._disposableObjects;
 
         function createResourcesHandler(cls) {
             var handler = new cls();
@@ -204,18 +198,6 @@ module.exports = Aria.classDefinition({
         });
     },
 
-    $destructor : function () {
-        // ---------------------------------------------------------------------
-
-        this.$EnhancedRobotTestCase.$destructor.call(this);
-
-        // ---------------------------------------------------------------------
-
-        ariaUtilsArray.forEach(this._disposableObjects, function (object) {
-            object.$dispose();
-        });
-    },
-
     $prototype : {
         ////////////////////////////////////////////////////////////////////////
         // Tests
@@ -225,7 +207,7 @@ module.exports = Aria.classDefinition({
             // --------------------------------------------------- destructuring
 
             var idOfWidgetToTest = this.idOfWidgetToTest;
-            var widgetsIds = this.templateCtxt.data.widgetsIds;
+            var widgetsIds = this._getData().widgetsIds;
 
             // ------------------------------------------------------ processing
 
@@ -242,16 +224,17 @@ module.exports = Aria.classDefinition({
 
             this._waiAria = false;
 
-            this._asyncSequence([
-                testWidgets,
+            this._localAsyncSequence(function (add) {
+                add(testWidgets);
+                add(testWaiAriaWidgets);
 
-                testWaiAriaWidgets,
-                turnWaiAriaOn,
-                refresh,
-                testWaiAriaWidgets
-            ], this.end, this);
+                add(this._createAsyncWrapper(turnWaiAriaOn));
+                add('_refresh');
 
-            // ------------------------------------------------------- functions
+                add(testWaiAriaWidgets);
+            }, this.end);
+
+            // ------------------------------------------------- local functions
 
             function _testWidgets(next, testFunction) {
                 this._asyncIterate(
@@ -272,27 +255,20 @@ module.exports = Aria.classDefinition({
                 _testWidgets.call(this, next, this._testWaiAriaWidget);
             }
 
-            function turnWaiAriaOn(next) {
+            function turnWaiAriaOn() {
                 this._waiAria = true;
 
-                var widgets = this.templateCtxt.data.widgets;
+                var widgets = this._getData().widgets;
                 for (var widgetId in widgets) {
                     widgets[widgetId].configuration.waiAria = true;
                 }
-
-                next();
-            }
-
-            function refresh(next) {
-                this.templateCtxt.$refresh();
-                next();
             }
         },
 
         _testWaiAriaWidget : function (callback, id) {
             // --------------------------------------------------- destructuring
 
-            var data = this.templateCtxt.data;
+            var data = this._getData();
             var waiAria = this._waiAria;
 
             var expectations = data.widgets[id].expectations;
@@ -303,28 +279,32 @@ module.exports = Aria.classDefinition({
 
             var shouldBeOpenOnDownArrow = !waiAria && canBeOpened && canBeOpenedOnDownArrow;
 
+            var isOpen = this._createIsOpenPredicate(id);
+
             this._localAsyncSequence(function (add) {
                 add('_focusWidget', id);
 
                 add('_pressDown');
                 if (shouldBeOpenOnDownArrow) {
-                    add('_checkWidgetDropdown', id, true);
+                    add(isOpen.waitAndAssertTrue);
                     add('_pressShiftF10');
                 }
-                add('_checkWidgetDropdown', id, false);
+                add(isOpen.waitAndAssertFalse);
             }, callback);
         },
 
         _testWidget : function (callback, id) {
             // --------------------------------------------------- destructuring
 
-            var data = this.templateCtxt.data;
+            var data = this._getData();
             var waiAria = this._waiAria;
 
             var expectations = data.widgets[id].expectations;
             var canBeOpened = expectations.canBeOpened;
 
             // ------------------------------------------------------ processing
+
+            var isOpen = this._createIsOpenPredicate(id);
 
             var shouldBeOpenOnShiftF10 = canBeOpened;
 
@@ -334,13 +314,15 @@ module.exports = Aria.classDefinition({
                 add('_pressShiftF10');
 
                 if (shouldBeOpenOnShiftF10) {
-                    add('_checkWidgetDropdown', id, true);
+                    add(isOpen.waitAndAssertTrue);
                     add('_pressShiftF10');
                 } else {
                     add('_type', 'o'); // to display the suggestion 'one'; moreover, 'o' doesn't change from QWERTY to AZERTY
-                    add('_checkWidgetDropdown', id, true);
+                    add(isOpen.waitAndAssertTrue);
                     add('_pressShiftF10');
                 }
+
+                add(isOpen.waitAndAssertFalse);
 
                 if (!shouldBeOpenOnShiftF10) {
                     add('_pressBackspace'); // to erase the previously entered character and reset a proper state for testing
@@ -354,46 +336,15 @@ module.exports = Aria.classDefinition({
         // Library: dropdown
         ////////////////////////////////////////////////////////////////////////
 
-        _checkWidgetDropdownState : function (id, shouldBeOpen) {
-            // -------------------------------------- input arguments processing
-
-            if (shouldBeOpen == null) {
-                shouldBeOpen = true;
-            }
-
-            // ------------------------------------------------------ processing
-
-            var isOpen = this.getWidgetDropDownPopup(id) != null;
-            var result = isOpen === shouldBeOpen;
-
-            // ---------------------------------------------------------- return
-
-            return result;
-        },
-
-        _waitForWidgetDropdown : function (callback, id, shouldBeOpen) {
-            this.waitFor({
-                scope: this,
-                condition: function condition() {
-                    return this._checkWidgetDropdownState(id, shouldBeOpen);
-                },
-                callback: callback
-            });
-        },
-
-        _checkWidgetDropdown : function (callback, id, shouldBeOpen) {
-            // ------------------------------------------------------ processing
-
-            var message = ariaUtilsString.substitute(
-                'Widget "%1" should have its dropdown %2',
-                [id, shouldBeOpen ? 'open' : 'closed']
-            );
-
-            this._waitAndCheck(callback, condition, message, this);
-
-            function condition() {
-                return this._checkWidgetDropdownState(id, shouldBeOpen);
-            }
+        _createIsOpenPredicate : function (id) {
+            return this._createPredicate(function () {
+                return this._isWidgetDropdownPopupOpen(id);
+            }, function (shouldBeTrue) {
+                return ariaUtilsString.substitute(
+                    'Widget "%1" should have its dropdown %2',
+                    [id, shouldBeTrue ? 'open' : 'closed']
+                );
+            }, this);
         }
    }
 });
