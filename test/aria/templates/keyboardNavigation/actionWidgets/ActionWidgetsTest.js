@@ -150,10 +150,9 @@ module.exports = Aria.classDefinition({
                         callback: next
                     });
                 });
-                add(function (next) {
+                add(this._createAsyncWrapper(function () {
                     ariaUtilsJson.setValue(data, 'actionDone', false);
-                    next();
-                });
+                }));
             }, callback);
         },
 
@@ -181,8 +180,6 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
-            var widgetDom = this._getWidgetDom(id);
-
             this._localAsyncSequence(function (add) {
                 if (reverseDirection) {
                     add('_pressShiftTab');
@@ -190,7 +187,7 @@ module.exports = Aria.classDefinition({
                     add('_pressTab');
                 }
 
-                add('_waitForFocus', widgetDom, false);
+                add('_waitForWidgetFocus', id);
             }, callback);
         },
 
@@ -203,7 +200,7 @@ module.exports = Aria.classDefinition({
         _checkCounters : function (expectedCounts) {
             // --------------------------------------------------- destructuring
 
-            var data = this.templateCtxt.data;
+            var data = this._getData();
 
             var countersIds = data.countersIds;
 
