@@ -46,7 +46,7 @@ module.exports = Aria.classDefinition({
         runTemplateTest : function () {
             // --------------------------------------------------- destructuring
 
-            var id = this.templateCtxt.data.id;
+            var id = this._getData().id;
 
             // ------------------------------------------------------ processing
 
@@ -86,8 +86,7 @@ module.exports = Aria.classDefinition({
             // -----------------------------------------------------------------
 
             function condition() {
-                var isOpen = this.getWidgetDropDownPopup(id) != null;
-                return isOpen === shouldBeOpen;
+                return this._isWidgetDropdownPopupOpen(id) === shouldBeOpen;
             }
         }
     }
