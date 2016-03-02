@@ -197,7 +197,7 @@ module.exports = Aria.classDefinition({
                     ariaUtilsArray.forEach(tabs, this._checkTabRole, this);
                     this._checkTabPanelRole(tabPanel);
                 }));
-                add('_checkWidgetAttribute', tabPanel.id, 'tabindex', '0');
+                add('_checkWidgetAttribute', tabPanel.id, 'tabindex', '0', false);
             }, callback);
         },
 

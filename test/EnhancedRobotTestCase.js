@@ -356,10 +356,19 @@ var prototype = {
     // Assertions: DOM
     ////////////////////////////////////////////////////////////////////////////
 
-    _checkAttribute : function (id, element, attributeName, expected) {
+    _checkAttribute : function (id, element, attributeName, expected, strict) {
+        if (strict == null) {
+            strict = true;
+        }
+
         var attribute = element.getAttribute(attributeName);
 
-        var condition = attribute === expected;
+        var condition;
+        if (strict) {
+            condition = attribute === expected;
+        } else {
+            condition = attribute == expected;
+        }
 
         var message = 'Widget "%1" should have attribute "%2" set to "%3", it has value "%4" instead';
         message = ariaUtilsString.substitute(message, [
@@ -372,14 +381,14 @@ var prototype = {
         this.assertTrue(condition, message);
     },
 
-    _checkWidgetAttribute : function (id, attributeName, expected) {
+    _checkWidgetAttribute : function (id, attributeName, expected, strict) {
         var element = this._getWidgetDom(id);
-        this._checkAttribute(id, element, attributeName, expected);
+        this._checkAttribute(id, element, attributeName, expected, strict);
     },
 
-    _checkElementAttribute : function (id, attributeName, expected) {
+    _checkElementAttribute : function (id, attributeName, expected, strict) {
         var element = this.getElementById(id);
-        this._checkAttribute(id, element, attributeName, expected);
+        this._checkAttribute(id, element, attributeName, expected, strict);
     },
 
 
