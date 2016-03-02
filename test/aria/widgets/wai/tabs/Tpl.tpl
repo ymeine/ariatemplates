@@ -14,8 +14,8 @@
  */
 
 {Template {
-    $classpath : 'test.aria.widgets.wai.tabs.TabsTestTpl',
-    $css: ['test.aria.widgets.wai.tabs.TabsTestTplCSS']
+    $classpath : 'test.aria.widgets.wai.tabs.Tpl',
+    $css: ['test.aria.widgets.wai.tabs.TplCSS']
 }}
 
     {macro main()}

@@ -27,7 +27,7 @@ var Model = require('./Model');
 ////////////////////////////////////////////////////////////////////////////////
 
 module.exports = Aria.classDefinition({
-    $classpath : 'test.aria.widgets.wai.tabs.TabsTest',
+    $classpath : 'test.aria.widgets.wai.tabs.Base',
     $extends : require('test/EnhancedRobotTestCase'),
 
     $constructor : function () {
@@ -40,7 +40,15 @@ module.exports = Aria.classDefinition({
         var data = Model.buildData();
         data.readBinding = this._readBinding;
 
+        var groupIndex = this.groupIndex;
+        if (groupIndex != null) {
+            var groups = data.groups;
+            groups = [groups[groupIndex]];
+            data.groups = groups;
+        }
+
         this.setTestEnv({
+            template : 'test.aria.widgets.wai.tabs.Tpl',
             data: data
         });
     },
@@ -59,6 +67,7 @@ module.exports = Aria.classDefinition({
 
         _runTestOnGroups : function (callback, test) {
             var groups = this._getData().groups;
+
             this._asyncIterate(groups, test, callback, this);
         },
 

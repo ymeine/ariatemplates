@@ -13,12 +13,16 @@
  * limitations under the License.
  */
 
-{CSSTemplate {
-  $classpath : 'test.aria.widgets.wai.tabs.TabsTestTplCSS'
-}}
-    {macro main()}
-        *:focus {
-            outline: solid red 1px;
-        }
-    {/macro}
-{/CSSTemplate}
+var Aria = require('ariatemplates/Aria');
+
+
+
+module.exports = Aria.classDefinition({
+    $classpath : 'test.aria.widgets.wai.tabs.Group3',
+
+    $extends : require('./Base'),
+
+    $statics : {
+        groupIndex: 2
+    }
+});
