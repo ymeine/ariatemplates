@@ -18,86 +18,7 @@ var Aria = require('ariatemplates/Aria');
 var ariaUtilsArray = require('ariatemplates/utils/Array');
 var ariaUtilsString = require('ariatemplates/utils/String');
 
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Models: Group (TabPanel + tabs), TabPanel, Tab
-////////////////////////////////////////////////////////////////////////////////
-
-function Group(waiAria, id, bindingContainer, macro, tabsUnder) {
-    // -------------------------------------------------------------- properties
-
-    this.waiAria = waiAria;
-    this.id = id;
-
-    if (tabsUnder == null) {
-        tabsUnder = false;
-    }
-    this.tabsUnder = tabsUnder;
-
-    // -------------------------------------------------------------- attributes
-
-    var binding = {
-        inside: bindingContainer,
-        to: id
-    };
-    this.binding = binding;
-
-    var tabPanel = new TabPanel(waiAria, id, binding, macro);
-    this.tabPanel = tabPanel;
-
-    var tabs = [];
-    this.tabs = tabs;
-
-    for (var index = 0, length = 2; index < length; index++) {
-        var label = 'Tab ' + index;
-        var tabId = id + '_tab_' + index;
-
-        var tab = new Tab(waiAria, tabId, binding, label);
-
-        tabs.push(tab);
-    }
-}
-
-function TabPanel(waiAria, id, binding, macro) {
-    // -------------------------------------------------------------- properties
-
-    this.waiAria = waiAria;
-    this.id = id;
-
-    // -------------------------------------------------------------- attributes
-
-    this.configuration = {
-        id: id,
-        bind: {
-            selectedTab: binding
-        },
-        macro: {
-            name: macro,
-            args: [this]
-        },
-        waiAria: waiAria
-    };
-}
-
-function Tab(waiAria, tabId, binding, label) {
-    // -------------------------------------------------------------- properties
-
-    this.waiAria = waiAria;
-    this.tabId = tabId;
-    this.label = label;
-
-    // -------------------------------------------------------------- attributes
-
-    this.configuration = {
-        id: tabId,
-        tabId: tabId,
-        bind: {
-            selectedTab: binding
-        },
-        waiAria: waiAria
-    };
-}
+var Model = require('./Model');
 
 
 
@@ -114,54 +35,10 @@ module.exports = Aria.classDefinition({
 
         this.$EnhancedRobotTestCase.constructor.call(this);
 
-        // ---------------------------------------------------------- processing
-
-        var macro = 'displayTabPanel';
-        var bindingContainer = {};
-
-        var groups = [];
-
         // ---------------------------------------------------------------------
 
-        ariaUtilsArray.forEach([
-            {
-                id: 'up',
-                waiAria: false,
-                tabsUnder: false
-            },
-            {
-                id: 'down',
-                waiAria: false,
-                tabsUnder: true
-            },
-            {
-                id: 'up_waiAria',
-                waiAria: true,
-                tabsUnder: false
-            },
-            {
-                id: 'down_waiAria',
-                waiAria: true,
-                tabsUnder: true
-            }
-        ], function (spec) {
-            groups.push(new Group(
-                spec.waiAria,
-                spec.id,
-                bindingContainer,
-                macro,
-                spec.tabsUnder
-            ));
-        });
-
-        // ---------------------------------------------------------------------
-
-        var data = {
-            bindingContainer: bindingContainer,
-            groups: groups,
-
-            readBinding: this._readBinding
-        };
+        var data = Model.buildData();
+        data.readBinding = this._readBinding;
 
         this.setTestEnv({
             data: data
