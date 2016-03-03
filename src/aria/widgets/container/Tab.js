@@ -533,6 +533,7 @@ module.exports = Aria.classDefinition({
         _dom_onkeydown : function (domEvt) {
             if (domEvt.keyCode == aria.DomEvent.KC_SPACE || domEvt.keyCode == aria.DomEvent.KC_ENTER) {
                 this._selectTab();
+                domEvt.preventDefault();
             }
         }
 
