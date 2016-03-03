@@ -35,17 +35,21 @@ module.exports = Aria.classDefinition({
     $constructor : function (cfg, ctxt) {
         // ---------------------------------------------------------------------
 
-        var inside = this._getConfigurationOfCommonBinding(cfg).inside;
+        var configurationOfCommonBinding = this._getConfigurationOfCommonBinding(cfg);
 
-        cfg.bind.controlledTabPanelId = {
-            inside: inside,
-            to: this._getControlledTabPanelIdPropertyName(cfg)
-        };
+        if (configurationOfCommonBinding != null) {
+            var inside = configurationOfCommonBinding.inside;
 
-        cfg.bind.labelId = {
-            inside: inside,
-            to: this._getLabelIdPropertyName(cfg)
-        };
+            cfg.bind.controlledTabPanelId = {
+                inside: inside,
+                to: this._getControlledTabPanelIdPropertyName(cfg)
+            };
+
+            cfg.bind.labelId = {
+                inside: inside,
+                to: this._getLabelIdPropertyName(cfg)
+            };
+        }
 
         // ---------------------------------------------------------------------
 
@@ -97,12 +101,17 @@ module.exports = Aria.classDefinition({
         this._ariaRole = 'tab'; // used by base classes to generate markup
 
         cfg = this._cfg;
-        var binding = cfg.bind.selectedTab;
-        var inside = binding.inside;
-        var to = binding.to;
+        if (cfg.bind != null) {
+            var binding = cfg.bind.selectedTab;
 
-        if (inside[to] === cfg.tabId) {
-            this._ariaSelected = true; // used by base classes to generate markup
+            if (binding != null) {
+                var inside = binding.inside;
+                var to = binding.to;
+
+                if (inside[to] === cfg.tabId) {
+                    this._ariaSelected = true; // used by base classes to generate markup
+                }
+            }
         }
 
         // aria-labelledby (TabPanel) ------------------------------------------
@@ -163,15 +172,34 @@ module.exports = Aria.classDefinition({
                 cfg = this._cfg;
             }
 
+            // --------------------------------------------------- destructuring
+
+            var bind = cfg.bind;
+
+            // ----------------------------------------------- early termination
+
+            if (bind == null) {
+                return null;
+            }
+
             // --------------------------------------------- processing & return
 
-            return cfg.bind.selectedTab;
+            return bind.selectedTab;
         },
 
         _getCommonBindingMetaDataPropertyName : function (name, cfg) {
             // --------------------------------------------------- destructuring
 
             var configurationOfCommonBinding = this._getConfigurationOfCommonBinding(cfg);
+
+            // ----------------------------------------------- early termination
+
+            if (configurationOfCommonBinding == null) {
+                return null;
+            }
+
+            // --------------------------------------------------- destructuring
+
             var to = configurationOfCommonBinding.to;
 
             // ------------------------------------------------------ processing
@@ -208,6 +236,15 @@ module.exports = Aria.classDefinition({
 
             if (selectedTab == null) {
                 var binding = this._getConfigurationOfCommonBinding();
+
+            // ----------------------------------------------- early termination
+
+                if (binding == null) {
+                    return null;
+                }
+
+            // ---------------------------------------------------- facilitation
+
                 var inside = binding.inside;
                 var to = binding.to;
 
@@ -243,6 +280,14 @@ module.exports = Aria.classDefinition({
             // --------------------------------------------------- destructuring
 
             var configurationOfCommonBinding = this._getConfigurationOfCommonBinding();
+
+            // ----------------------------------------------- early termination
+
+            if (configurationOfCommonBinding == null) {
+                return null;
+            }
+
+            // --------------------------------------------------- destructuring
 
             var inside = configurationOfCommonBinding.inside;
             var property = this._getControlledTabPanelIdPropertyName();
