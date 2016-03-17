@@ -14,6 +14,8 @@
  */
 var Aria = require("../../Aria");
 
+var ariaUtilsArray = require("../../utils/Array");
+
 var ariaWidgetsFramesFrameFactory = require("../frames/FrameFactory");
 var ariaWidgetsContainerTabStyle = require("./TabStyle.tpl.css");
 var ariaWidgetsContainerContainer = require("./Container");
@@ -97,33 +99,57 @@ module.exports = Aria.classDefinition({
 
         // ---------------------------------------------------------------------
 
-        this._tabIndex = '0'; // used by base classes to generate markup
-        this._ariaRole = 'tab'; // used by base classes to generate markup
-
         cfg = this._cfg;
-        if (cfg.bind != null) {
-            var binding = cfg.bind.selectedTab;
 
-            if (binding != null) {
-                var inside = binding.inside;
-                var to = binding.to;
+        if (cfg.waiAria) {
+            var extraAttributes = [];
 
-                if (inside[to] === cfg.tabId) {
-                    this._ariaSelected = true; // used by base classes to generate markup
+            // -----------------------------------------------------------------
+
+            extraAttributes.push(['tabindex', '0']);
+            extraAttributes.push(['role', 'tab']);
+
+            // selected --------------------------------------------------------
+
+            if (cfg.bind != null) {
+                var binding = cfg.bind.selectedTab;
+
+                if (binding != null) {
+                    var inside = binding.inside;
+                    var to = binding.to;
+
+                    if (inside[to] === cfg.tabId) {
+                        extraAttributes.push(['aria-selected', 'true']);
+                        extraAttributes.push(['aria-expanded', 'true']);
+                    } else {
+                        extraAttributes.push(['aria-selected', 'false']);
+                        extraAttributes.push(['aria-expanded', 'false']);
+                    }
                 }
             }
-        }
 
-        // aria-labelledby (TabPanel) ------------------------------------------
+            // aria-labelledby (TabPanel) --------------------------------------
 
-        this._updateLabelId();
+            this._updateLabelId();
 
-        // aria-controls (Tab) -------------------------------------------------
+            // aria-controls (Tab) ---------------------------------------------
 
-        // use it if already available
-        var id = this._getControlledTabPanelId();
-        if (id != null) {
-            this._ariaControls = id; // used by base classes to generate markup
+            var id = this._getControlledTabPanelId();
+            if (id != null) {
+                extraAttributes.push(['aria-controls', id]);
+            }
+
+            // _extraAttributes ------------------------------------------------
+
+            var _extraAttributes = '';
+            ariaUtilsArray.forEach(extraAttributes, function (attribute) {
+                var key = attribute[0];
+                var value = attribute[1];
+
+                _extraAttributes += ' ' + key + '="' + value + '"';
+            });
+            _extraAttributes += ' ';
+            this._extraAttributes = _extraAttributes;
         }
     },
 

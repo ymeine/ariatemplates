@@ -14,6 +14,8 @@
  */
 var Aria = require("../../Aria");
 
+var ariaUtilsArray = require("../../utils/Array");
+
 var ariaWidgetsFramesFrameFactory = require("../frames/FrameFactory");
 var ariaWidgetsContainerTabPanelStyle = require("./TabPanelStyle.tpl.css");
 var ariaWidgetsContainerContainer = require("./Container");
@@ -71,21 +73,40 @@ module.exports = Aria.classDefinition({
 
         this._spanStyle = "top:-1.5px;";
 
-        this._tabIndex = '0';
-        this._ariaRole = 'tabpanel';
-
         // ---------------------------------------------------------------------
 
-        // aria-controls (Tab) -------------------------------------------------
+        cfg = this._cfg;
 
-        this._updateControlledTabPanelId();
+        if (cfg.waiAria) {
+            var extraAttributes = [];
 
-        // aria-labelledby (TabPanel) ------------------------------------------
+            // -----------------------------------------------------------------
 
-        // use it if already available
-        var id = this._getLabelId();
-        if (id != null) {
-            this._ariaLabelledBy = id; // used by base classes to generate markup
+            extraAttributes.push(['tabindex', '0']);
+            extraAttributes.push(['role', 'tabpanel']);
+
+            // aria-controls (Tab) ---------------------------------------------
+
+            this._updateControlledTabPanelId();
+
+            // aria-labelledby (TabPanel) --------------------------------------
+
+            var id = this._getLabelId();
+            if (id != null) {
+                extraAttributes.push(['aria-labelledby', id]);
+            }
+
+            // _extraAttributes ------------------------------------------------
+
+            var _extraAttributes = '';
+            ariaUtilsArray.forEach(extraAttributes, function (attribute) {
+                var key = attribute[0];
+                var value = attribute[1];
+
+                _extraAttributes += ' ' + key + '="' + value + '"';
+            });
+            _extraAttributes += ' ';
+            this._extraAttributes = _extraAttributes;
         }
     },
     /**
