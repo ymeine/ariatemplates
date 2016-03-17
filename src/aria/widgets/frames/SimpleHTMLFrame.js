@@ -52,13 +52,6 @@ module.exports = Aria.classDefinition({
         linkToDom : function (domElt) {
             this.$Frame.linkToDom.call(this, domElt);
             this._childRootElt = domElt;
-
-            var cfg = this._cfg;
-
-            var id = cfg.id;
-            if (id != null) {
-                domElt.id = id;
-            }
         },
 
         /**
@@ -79,11 +72,8 @@ module.exports = Aria.classDefinition({
          */
         changeState : function (stateName) {
             this.$Frame.changeState.call(this, stateName);
-
             this._computeSize();
-
             var domElt = this._domElt;
-
             var sizeInfo = {
                 width : (this.innerWidth > -1) ? this.innerWidth + "px" : "",
                 height : (this.innerHeight > -1) ? this.innerHeight + "px" : ""

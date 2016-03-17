@@ -86,7 +86,7 @@ module.exports = Aria.classDefinition({
             sclass : cfg.sclass,
             skinnableClass : this._skinnableClass,
             printOptions : cfg.printOptions,
-            id : Aria.testMode || cfg.waiAria ? this._getFrameId() : undefined
+            id : Aria.testMode ? this._domId + "_" + cfg.tabId : undefined
         });
 
         /**
@@ -247,13 +247,10 @@ module.exports = Aria.classDefinition({
             return this._getCommonBindingMetaDataPropertyName('labelId', cfg);
         },
 
-        _getFrameId : function () {
-            return this._domId + "_" + this._cfg.tabId;
-        },
-
         _updateLabelId : function (selectedTab) {
             // --------------------------------------------------- destructuring
 
+            var id = this._domId;
             var cfg = this._cfg;
 
             var tabId = cfg.tabId;
@@ -285,8 +282,6 @@ module.exports = Aria.classDefinition({
                 var isSelected = selectedTab === tabId;
 
                 if (isSelected) {
-                    var id = this._getFrameId();
-
                     this.changeProperty('labelId', id);
                 }
             }
