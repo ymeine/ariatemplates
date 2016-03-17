@@ -379,8 +379,10 @@ module.exports = Aria.classDefinition({
 
                     if (isSelected) {
                         element.setAttribute('aria-selected', 'true');
+                        element.setAttribute('aria-expanded', 'true');
                     } else if (wasSelected) {
-                        element.removeAttribute('aria-selected');
+                        element.setAttribute('aria-selected', 'false');
+                        element.setAttribute('aria-expanded', 'false');
                     }
                 }
             }
