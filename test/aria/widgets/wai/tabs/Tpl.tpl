@@ -20,7 +20,7 @@
 
     {macro main()}
         {foreach group inArray this.data.groups}
-            <a href='#' {id 'before_' + group.id /}>Element before ${group.id}</a><br/>
+            <a href='#' {id group.elementBeforeId /}>Element before ${group.id}</a><br/>
             {call displayGroup(group) /}
             <hr/>
         {/foreach}
@@ -42,16 +42,10 @@
 
     {macro displayTabPanel(tabPanel)}
         <p>
-            This is the TabPanel content for: ${tabPanel.configuration.id}
-        </p>
-        <p>
-            Currently selected tab: ${this.data.readBinding(tabPanel.configuration.bind.selectedTab)}
-        </p>
-        <p>
             WaiAria activated: ${tabPanel.waiAria ? 'true' : 'false'}
         </p>
         <p>
-            <a href='#' {id 'inside_' + tabPanel.id /}>Focusable element</a>
+            <input type='text' {id 'inside_' + tabPanel.id /}></input>
         </p>
     {/macro}
 

@@ -26,6 +26,7 @@ function Group(waiAria, id, bindingContainer, macro, tabsUnder) {
 
     this.waiAria = waiAria;
     this.id = id;
+    this.elementBeforeId = 'before_' + id;
 
     if (tabsUnder == null) {
         tabsUnder = false;
@@ -46,6 +47,9 @@ function Group(waiAria, id, bindingContainer, macro, tabsUnder) {
     var tabs = [];
     this.tabs = tabs;
 
+    var tabsMap = {};
+    this.tabsMap = tabsMap;
+
     for (var index = 0, length = 3; index < length; index++) {
         var label = 'Tab ' + index;
         var tabId = id + '_tab_' + index;
@@ -54,8 +58,28 @@ function Group(waiAria, id, bindingContainer, macro, tabsUnder) {
         var tab = new Tab(waiAria, tabId, binding, label, disabled);
 
         tabs.push(tab);
+        tabsMap[tabId] = tab;
     }
 }
+
+Group.prototype.getSelectedTab = function getSelectedTab() {
+    // ----------------------------------------------------------- destructuring
+
+    var tabsMap = this.tabsMap;
+
+    var binding = this.binding;
+    var inside = binding.inside;
+    var to = binding.to;
+
+    // -------------------------------------------------------------- processing
+
+    var selectedTabId = inside[to];
+    var tab = tabsMap[selectedTabId];
+
+    // ------------------------------------------------------------------ return
+
+    return tab;
+};
 
 function TabPanel(waiAria, id, binding, macro) {
     // -------------------------------------------------------------- properties
@@ -85,6 +109,7 @@ function Tab(waiAria, tabId, binding, label, disabled) {
     this.tabId = tabId;
     this.label = label;
     this.disabled = disabled;
+    this.binding = binding;
 
     // -------------------------------------------------------------- attributes
 
@@ -99,6 +124,25 @@ function Tab(waiAria, tabId, binding, label, disabled) {
         waiAria: waiAria
     };
 }
+
+Tab.prototype.isSelected = function isSelected() {
+    // ----------------------------------------------------------- destructuring
+
+    var tabId = this.tabId;
+
+    var binding = this.binding;
+    var inside = binding.inside;
+    var to = binding.to;
+
+    // -------------------------------------------------------------- processing
+
+    var selectedTabId = inside[to];
+    var result = selectedTabId === tabId;
+
+    // ------------------------------------------------------------------ return
+
+    return result;
+};
 
 
 
