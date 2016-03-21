@@ -118,15 +118,20 @@ module.exports = Aria.classDefinition({
                     var inside = binding.inside;
                     var to = binding.to;
 
-                    if (inside[to] === cfg.tabId) {
-                        extraAttributes.push(['aria-selected', 'true']);
-                        extraAttributes.push(['aria-expanded', 'true']);
-                    } else {
-                        extraAttributes.push(['aria-selected', 'false']);
-                        extraAttributes.push(['aria-expanded', 'false']);
-                    }
+                    var selected = inside[to] === cfg.tabId;
+                    var value = selected ? 'true' : 'false';
+
+                    extraAttributes.push(['aria-selected', value]);
+                    extraAttributes.push(['aria-expanded', value]);
                 }
             }
+
+            // aria-disabled ---------------------------------------------------
+
+            var disabled = cfg.disabled;
+
+            var value = disabled ? 'true' : 'false';
+            extraAttributes.push(['aria-disabled', value]);
 
             // aria-labelledby (TabPanel) --------------------------------------
 
@@ -372,8 +377,11 @@ module.exports = Aria.classDefinition({
         _onBoundPropertyChange : function (propertyName, newValue, oldValue) {
             // --------------------------------------------------- destructuring
 
+            var element = this.getDom();
+
             var cfg = this._cfg;
             var tabId = cfg.tabId;
+            var waiAria = cfg.waiAria;
 
             // ------------------------------------------------------ processing
 
@@ -387,6 +395,11 @@ module.exports = Aria.classDefinition({
                 }
             } else if (propertyName === 'controlledTabPanelId') {
                 this._reactToControlledTabPanelIdChange(newValue);
+            } else if (propertyName === 'disabled') {
+                if (waiAria) {
+                    var attributeValue = newValue ? 'true' : 'false';
+                    element.setAttribute('aria-disabled', attributeValue);
+                }
             } else {
                 this.$Container._onBoundPropertyChange.call(this, propertyName, newValue, oldValue);
             }
@@ -395,16 +408,11 @@ module.exports = Aria.classDefinition({
                 cfg[propertyName] = newValue;
                 this._updateState();
 
-                if (cfg.waiAria) {
-                    var element = this.getDom();
+                if (waiAria) {
+                    var value = isSelected ? 'true' : 'false';
 
-                    if (isSelected) {
-                        element.setAttribute('aria-selected', 'true');
-                        element.setAttribute('aria-expanded', 'true');
-                    } else if (wasSelected) {
-                        element.setAttribute('aria-selected', 'false');
-                        element.setAttribute('aria-expanded', 'false');
-                    }
+                    element.setAttribute('aria-selected', value);
+                    element.setAttribute('aria-expanded', value);
                 }
             }
 
