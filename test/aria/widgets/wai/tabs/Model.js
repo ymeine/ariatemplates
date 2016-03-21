@@ -46,11 +46,12 @@ function Group(waiAria, id, bindingContainer, macro, tabsUnder) {
     var tabs = [];
     this.tabs = tabs;
 
-    for (var index = 0, length = 2; index < length; index++) {
+    for (var index = 0, length = 3; index < length; index++) {
         var label = 'Tab ' + index;
         var tabId = id + '_tab_' + index;
+        var disabled = index === 1 ? true : false;
 
-        var tab = new Tab(waiAria, tabId, binding, label);
+        var tab = new Tab(waiAria, tabId, binding, label, disabled);
 
         tabs.push(tab);
     }
@@ -77,17 +78,19 @@ function TabPanel(waiAria, id, binding, macro) {
     };
 }
 
-function Tab(waiAria, tabId, binding, label) {
+function Tab(waiAria, tabId, binding, label, disabled) {
     // -------------------------------------------------------------- properties
 
     this.waiAria = waiAria;
     this.tabId = tabId;
     this.label = label;
+    this.disabled = disabled;
 
     // -------------------------------------------------------------- attributes
 
     this.configuration = {
         id: tabId,
+        disabled: disabled,
         tabId: tabId,
         bind: {
             selectedTab: binding
