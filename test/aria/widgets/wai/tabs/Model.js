@@ -95,6 +95,7 @@ function Tab(waiAria, tabId, binding, label, disabled) {
         bind: {
             selectedTab: binding
         },
+        sclass: 'simple',
         waiAria: waiAria
     };
 }
