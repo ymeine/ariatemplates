@@ -100,13 +100,13 @@ module.exports = Aria.classDefinition({
         // ---------------------------------------------------------------------
 
         cfg = this._cfg;
+        var extraAttributes = [];
+
+        extraAttributes.push(['tabindex', '0']);
 
         if (cfg.waiAria) {
-            var extraAttributes = [];
-
             // -----------------------------------------------------------------
 
-            extraAttributes.push(['tabindex', '0']);
             extraAttributes.push(['role', 'tab']);
 
             // selected --------------------------------------------------------
@@ -144,18 +144,19 @@ module.exports = Aria.classDefinition({
                 extraAttributes.push(['aria-controls', id]);
             }
 
-            // _extraAttributes ------------------------------------------------
-
-            var _extraAttributes = '';
-            ariaUtilsArray.forEach(extraAttributes, function (attribute) {
-                var key = attribute[0];
-                var value = attribute[1];
-
-                _extraAttributes += ' ' + key + '="' + value + '"';
-            });
-            _extraAttributes += ' ';
-            this._extraAttributes = _extraAttributes;
         }
+
+        // _extraAttributes ----------------------------------------------------
+
+        var _extraAttributes = '';
+        ariaUtilsArray.forEach(extraAttributes, function (attribute) {
+            var key = attribute[0];
+            var value = attribute[1];
+
+            _extraAttributes += ' ' + key + '="' + value + '"';
+        });
+        _extraAttributes += ' ';
+        this._extraAttributes = _extraAttributes;
     },
 
     $destructor : function () {

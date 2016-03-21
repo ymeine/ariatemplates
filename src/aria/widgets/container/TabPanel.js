@@ -76,13 +76,13 @@ module.exports = Aria.classDefinition({
         // ---------------------------------------------------------------------
 
         cfg = this._cfg;
+        var extraAttributes = [];
+
+        extraAttributes.push(['tabindex', '0']);
 
         if (cfg.waiAria) {
-            var extraAttributes = [];
-
             // -----------------------------------------------------------------
 
-            extraAttributes.push(['tabindex', '0']);
             extraAttributes.push(['role', 'tabpanel']);
 
             // aria-controls (Tab) ---------------------------------------------
@@ -95,19 +95,19 @@ module.exports = Aria.classDefinition({
             if (id != null) {
                 extraAttributes.push(['aria-labelledby', id]);
             }
-
-            // _extraAttributes ------------------------------------------------
-
-            var _extraAttributes = '';
-            ariaUtilsArray.forEach(extraAttributes, function (attribute) {
-                var key = attribute[0];
-                var value = attribute[1];
-
-                _extraAttributes += ' ' + key + '="' + value + '"';
-            });
-            _extraAttributes += ' ';
-            this._extraAttributes = _extraAttributes;
         }
+
+        // _extraAttributes ----------------------------------------------------
+
+        var _extraAttributes = '';
+        ariaUtilsArray.forEach(extraAttributes, function (attribute) {
+            var key = attribute[0];
+            var value = attribute[1];
+
+            _extraAttributes += ' ' + key + '="' + value + '"';
+        });
+        _extraAttributes += ' ';
+        this._extraAttributes = _extraAttributes;
     },
     /**
      * TabPanel destructor
