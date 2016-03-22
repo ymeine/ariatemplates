@@ -117,15 +117,22 @@ module.exports = Aria.classDefinition({
 
             // ------------------------------------------------------ processing
 
-            // TODO Test when selecting one tab
             this._executeStepsAndWriteHistory(callback, function (step, entry) {
-                step(['click', this.getElementById(group.elementBeforeId)]);
-                entry('Element before ' + group.id + ' Link'); // TODO clear history instead
-                step(['type', null, '[enter]']);
+                // --------------------------------------------- local functions
 
-                ariaUtilsArray.forEach(tabs, function (tab) {
-                    step(['type', null, '[down]']);
+                var self = this;
 
+                function selectStartPoint() {
+                    step(['click', self.getElementById(group.elementBeforeId)]);
+                    entry('Element before ' + group.id + ' Link');
+                }
+
+                function getSelectedTabDescription(tab) {
+                    entry(tab.label + ' Tab expanded');
+                    entry('To activate tab page press Spacebar.');
+                }
+
+                function getTabDescription(tab, isSelected) {
                     entry(tab.label);
 
                     var description = [];
@@ -133,30 +140,68 @@ module.exports = Aria.classDefinition({
                     if (tab.disabled) {
                         description.push('Unavailable');
                     }
-                    if (tab.isSelected()) {
+                    if (isSelected) {
                         description.push('open', 'expanded');
                     } else {
                         description.push('closed', 'collapsed');
                     }
                     entry(description.join(' '));
-                });
-
-                step(['type', null, '[down]']);
-                var description = 'tab panel start';
-                var selectedTab = group.getSelectedTab();
-                if (selectedTab != null) {
-                    description += ' ' + selectedTab.label;
                 }
-                entry(description);
 
-                step(['type', null, '[down]']);
-                entry('WaiAria activated: true');
-                step(['type', null, '[down]']);
-                step(['type', null, '[down]']);
-                entry('Edit');
+                function goThroughTabs(selectedTabIndex) {
+                    ariaUtilsArray.forEach(tabs, function (tab, index) {
+                        step(['type', null, '[down]']);
+                        getTabDescription(tab, selectedTabIndex === index);
+                    });
+                }
 
+                function goThroughTabpanel(selectedTab) {
+                    step(['type', null, '[down]']);
+                    var description = 'tab panel start';
+                    if (selectedTab != null) {
+                        description += ' ' + selectedTab.label;
+                    }
+                    entry(description);
+
+                    step(['type', null, '[down]']);
+                    entry('WaiAria activated: true');
+                    step(['type', null, '[down]']);
+                    step(['type', null, '[down]']);
+                    entry('Edit');
+
+                    step(['type', null, '[down]']);
+                    entry('tab panel end');
+                }
+
+                // -------------------------------------------------- processing
+
+                // no tab selected ---------------------------------------------
+
+                selectStartPoint();
+                step(['type', null, '[enter]']);
+
+                goThroughTabs();
+                goThroughTabpanel();
+
+                // selecting one tab -------------------------------------------
+
+                selectStartPoint();
+
+                goThroughTabs();
+
+                var lastTab = tabs[tabs.length - 1];
+                var tabBeforeLastTab = tabs[tabs.length - 2];
+
+                step(['type', null, '[space]']);
+                getSelectedTabDescription(lastTab)
+
+                step(['type', null, '[enter]']);
+                step(['type', null, '[up]']);
+                getTabDescription(tabBeforeLastTab)
                 step(['type', null, '[down]']);
-                entry('tab panel end');
+                getTabDescription(lastTab, true)
+
+                goThroughTabpanel(lastTab);
             });
         }
     }
