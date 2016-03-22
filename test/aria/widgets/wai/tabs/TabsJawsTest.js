@@ -17,9 +17,7 @@ var Aria = require('ariatemplates/Aria');
 
 var ariaUtilsArray = require('ariatemplates/utils/Array');
 
-var EnhancedRobotTestCase = require('test/EnhancedRobotTestCase');
-var ModalDialogJawsTest = require('test/aria/widgets/wai/popup/dialog/modal/ModalDialogJawsTest');
-var ariaJsunitJawsTestCase = require('ariatemplates/jsunit/JawsTestCase');
+var EnhancedJawsTestCase = require('test/EnhancedJawsTestCase');
 
 var Model = require('./Model');
 
@@ -27,12 +25,10 @@ var Model = require('./Model');
 
 module.exports = Aria.classDefinition({
     $classpath : 'test.aria.widgets.wai.tabs.TabsJawsTest',
-    $extends : ariaJsunitJawsTestCase,
+    $extends : EnhancedJawsTestCase,
 
     $constructor : function () {
-        this.$JawsTestCase.constructor.call(this);
-
-        this._history = [];
+        this.$EnhancedJawsTestCase.constructor.call(this);
 
         var data = Model.buildData();
         var groups = data.groups;
@@ -48,33 +44,10 @@ module.exports = Aria.classDefinition({
 
 
     ////////////////////////////////////////////////////////////////////////////
-    // Duplicate
+    //
     ////////////////////////////////////////////////////////////////////////////
 
     $prototype : {
-        $init : function (prototype) {
-            var source = EnhancedRobotTestCase.prototype;
-
-            for (var key in source) {
-                if (source.hasOwnProperty(key) && !prototype.hasOwnProperty(key)) {
-                    prototype[key] = source[key];
-                }
-            }
-
-            source = ModalDialogJawsTest.prototype;
-
-            ariaUtilsArray.forEach([
-                '_checkHistory',
-                '_executeStepsAndWriteHistory'
-            ], function (key) {
-                if (source.hasOwnProperty(key) && !prototype.hasOwnProperty(key)) {
-                    prototype[key] = source[key];
-                }
-            });
-        },
-
-
-
         ////////////////////////////////////////////////////////////////////////
         // Tests
         ////////////////////////////////////////////////////////////////////////
