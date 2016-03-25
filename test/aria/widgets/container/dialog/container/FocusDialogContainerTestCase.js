@@ -21,28 +21,6 @@ Aria.classDefinition({
         start: function () {
             var self = this;
 
-            function reachLastTabFromBodyInput2(callback) {
-                return function () {
-                    function reachLastTabFromBodyInput2_step0() {
-                        self.waitForFocus("bodyInput2", reachLastTabFromBodyInput2_step1)();
-                    }
-
-                    function reachLastTabFromBodyInput2_step1() {
-                        self.synEvent.type(null, "\t", self.waitForFocus("homeTab", reachLastTabFromBodyInput2_step2));
-                    }
-
-                    function reachLastTabFromBodyInput2_step2() {
-                        self.synEvent.type(null, "\t", self.waitForFocus("infoTab", reachLastTabFromBodyInput2_step3));
-                    }
-
-                    function reachLastTabFromBodyInput2_step3() {
-                        self.synEvent.type(null, "\t", self.waitForFocus("detailsTab", callback));
-                    }
-
-                    reachLastTabFromBodyInput2_step0();
-                };
-            }
-
             function step0() {
                 self.synEvent.click(self.getElementById("homeDialogModalToggleButton"), self.waitForIdVisible("homeDialogModalInput1", step1));
             }
@@ -52,7 +30,8 @@ Aria.classDefinition({
             }
 
             function step2() {
-                self.synEvent.type(null, "\t", reachLastTabFromBodyInput2(step3));
+                self.synEvent.type(null, "\t", self.waitForFocus("bodyInput2", step3));
+                // pressing tab from bodyInput2 skips the content of the home tab and directly goes to the dialog
             }
 
             function step3() {
@@ -68,7 +47,7 @@ Aria.classDefinition({
             }
 
             function step6 () {
-                self.synEvent.click(self.getElementById("bodyInput2"), reachLastTabFromBodyInput2(step7));
+                self.synEvent.click(self.getElementById("bodyInput2"), self.waitForFocus("bodyInput2", step7));
             }
 
             function step7() {
@@ -76,7 +55,7 @@ Aria.classDefinition({
             }
 
             function step8() {
-                self.synEvent.click(self.getElementById("bodyInput2"), reachLastTabFromBodyInput2(step9));
+                self.synEvent.click(self.getElementById("bodyInput2"), self.waitForFocus("bodyInput2", step9));
             }
 
             function step9() {
@@ -88,7 +67,7 @@ Aria.classDefinition({
             }
 
             function step11() {
-                self.synEvent.click(self.getElementById("bodyInput2"), reachLastTabFromBodyInput2(step12));
+                self.synEvent.click(self.getElementById("bodyInput2"), self.waitForFocus("bodyInput2", step12));
             }
 
             function step12() {
@@ -96,10 +75,7 @@ Aria.classDefinition({
             }
 
             function step13() {
-                self.synEvent.execute([
-                    ["type", null, "[ESCAPE]"],
-                    ["click", self.getElementById("bodyInput2")]
-                ], reachLastTabFromBodyInput2(step14));
+                self.synEvent.execute([["type", null, "[ESCAPE]"], ["click", self.getElementById("bodyInput2")]], self.waitForFocus("bodyInput2", step14));
             }
 
             function step14() {
