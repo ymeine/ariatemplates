@@ -102,8 +102,6 @@ module.exports = Aria.classDefinition({
 
         var extraAttributes = [];
 
-        extraAttributes.push(['tabindex', '0']);
-
         if (cfg.waiAria) {
             extraAttributes.push(['role', 'tab']);
 

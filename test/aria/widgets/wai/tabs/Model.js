@@ -75,6 +75,7 @@ function TabPanel(waiAria, id, binding, macro) {
             name: macro,
             args: [this]
         },
+        tabIndex: 0,
         waiAria: waiAria
     };
 }
@@ -98,6 +99,7 @@ function Tab(waiAria, tabId, binding, label, disabled) {
             selectedTab: binding
         },
         sclass: 'simple',
+        tabIndex: 0,
         waiAria: waiAria
     };
 }

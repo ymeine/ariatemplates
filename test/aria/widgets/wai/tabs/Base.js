@@ -111,6 +111,10 @@ module.exports = Aria.classDefinition({
 
             function checkTabs(add) {
                 ariaUtilsArray.forEach(tabs, function (tab) {
+                    if (tab.disabled) {
+                        return;
+                    }
+
                     add('_pressTab');
                     add('_checkWidgetIsFocused', tab.tabId);
                 });
@@ -139,15 +143,15 @@ module.exports = Aria.classDefinition({
                 add(isNoTabSelected.waitForTrue);
 
                 ariaUtilsArray.forEach(tabs, function (tab, index) {
+                    if (tab.disabled) {
+                        return;
+                    }
+
                     var selectionMethod = index === 0 ? '_pressEnter' : '_pressSpace';
                     add(selectionMethod);
 
                     var predicate = this._createTabSelectedPredicate(group, tab);
-                    if (tab.disabled) {
-                        add(predicate.waitForFalse);
-                    } else {
-                        add(predicate.waitForTrue);
-                    }
+                    add(predicate.waitForTrue);
 
                     if (index !== tabs.length - 1) {
                         add('_navigateForward');
@@ -187,7 +191,6 @@ module.exports = Aria.classDefinition({
                     ariaUtilsArray.forEach(tabs, this._checkTabDisabled, this);
                     this._checkTabPanelRole(tabPanel);
                 }));
-                add('_checkWidgetAttribute', tabPanel.id, 'tabindex', '0', false);
             }, callback);
         },
 
@@ -225,6 +228,10 @@ module.exports = Aria.classDefinition({
                 add('_focusFirstTab', group);
 
                 ariaUtilsArray.forEach(tabs, function (tab, tabIndex) {
+                    if (tab.disabled) {
+                        return;
+                    }
+
                     add(selectTab, tab);
                     add('_testDynamicAttributesForGroupWhenTabSelected', group, tabIndex);
 
