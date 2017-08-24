@@ -18,12 +18,21 @@ var ariaCoreBrowser = require("../core/Browser");
 var ariaUtilsString = require("./String");
 var ariaUtilsCssUnits = require("./css/Units");
 
+var ariaUtilsDom;
+
 /**
  * This class contains utilities to manipulate the DOM.
  */
 module.exports = Aria.classDefinition({
     $classpath : "aria.utils.Dom",
     $singleton : true,
+    $constructor : function () {
+        ariaUtilsDom = this;
+    },
+    $destructor : function () {
+        this.$JsObject.$dispose.call(this);
+        ariaUtilsDom = null;
+    },
     $statics : {
 
         VIEWPORT : "__$viewport",
@@ -44,7 +53,7 @@ module.exports = Aria.classDefinition({
          */
         getElementById : function (id) {
             if (ariaCoreBrowser.isIE7) {
-                this.getElementById = function (id) {
+                ariaUtilsDom.getElementById = function (id) {
                     var document = Aria.$window.document;
                     var el = document.getElementById(id);
                     if (el) {
@@ -62,12 +71,12 @@ module.exports = Aria.classDefinition({
                     return null;
                 };
             } else {
-                this.getElementById = function (id) {
+                ariaUtilsDom.getElementById = function (id) {
                     var document = Aria.$window.document;
                     return document.getElementById(id);
                 };
             }
-            return this.getElementById(id);
+            return ariaUtilsDom.getElementById(id);
         },
 
         /**
@@ -99,7 +108,7 @@ module.exports = Aria.classDefinition({
             }
             while (domElt && count > 0) {
                 domElt = domElt.nextSibling;
-                if (domElt && this.isElement(domElt)) {
+                if (domElt && ariaUtilsDom.isElement(domElt)) {
                     count--;
                 }
             }
@@ -118,7 +127,7 @@ module.exports = Aria.classDefinition({
             }
             while (domElt && count > 0) {
                 domElt = domElt.previousSibling;
-                if (domElt && this.isElement(domElt)) {
+                if (domElt && ariaUtilsDom.isElement(domElt)) {
                     count--;
                 }
             }
@@ -137,7 +146,7 @@ module.exports = Aria.classDefinition({
             if (!parentNode) {
                 return null;
             }
-            
+
             if (index == null) {
                 index = 0;
             }
@@ -148,7 +157,7 @@ module.exports = Aria.classDefinition({
 
             var childNodes = parentNode.childNodes, count = 0, l = childNodes.length;
             for (var i = (reverse) ? l - 1 : 0; (reverse) ? i >= 0 : i < l; (reverse) ? i-- : i++) {
-                if (this.isElement(childNodes[i])) {
+                if (ariaUtilsDom.isElement(childNodes[i])) {
                     if (count == index) {
                         return childNodes[i];
                     }
@@ -177,7 +186,7 @@ module.exports = Aria.classDefinition({
          * @return {HTMLElement} the dom elt or null if not found
          */
         getDomElementChildReverse : function (parentNode, index) {
-            return this.getDomElementChild(parentNode, index, true);
+            return ariaUtilsDom.getDomElementChild(parentNode, index, true);
         },
 
         /**
@@ -187,7 +196,7 @@ module.exports = Aria.classDefinition({
          */
         refreshDomElt : function (domElt) {
             if (ariaCoreBrowser.isIE7) {
-                this.refreshDomElt = function (domElt) {
+                ariaUtilsDom.refreshDomElt = function (domElt) {
                     // Ugly fix for IE, it might fail if domElt is inside an iFrame
                     try {
                         // PTR5975877 (IE7) PTR6034278 (IE9 in IE7mode)
@@ -202,7 +211,7 @@ module.exports = Aria.classDefinition({
                     } catch (ex) {}
                 };
             } else if (ariaCoreBrowser.isIE8) {
-                this.refreshDomElt = function (domElt) {
+                ariaUtilsDom.refreshDomElt = function (domElt) {
                     // why on earth it is necessary to write code like this is a mystery
                     // but as it stands, we abide. fixes PTR 04273172
                     // refreshing only the parentNode className is not enough, see regression 04563420
@@ -225,10 +234,10 @@ module.exports = Aria.classDefinition({
                     }
                 };
             } else {
-                this.refreshDomElt = function (domElt) {};
+                ariaUtilsDom.refreshDomElt = function (domElt) {};
             }
 
-            this.refreshDomElt(domElt);
+            ariaUtilsDom.refreshDomElt(domElt);
         },
 
         /**
@@ -241,16 +250,16 @@ module.exports = Aria.classDefinition({
          */
         replaceHTML : function (idOrElt, newHTML) {
 
-            // PROFILING // var msr1 = this.$startMeasure("ReplaceHTML");
+            // PROFILING // var msr1 = ariaUtilsDom.$startMeasure("ReplaceHTML");
             var domElt = idOrElt;
             if (typeof(domElt) == "string") {
-                domElt = this.getElementById(domElt);
+                domElt = ariaUtilsDom.getElementById(domElt);
             }
             if (domElt) {
                 if ((ariaCoreBrowser.isIE7 || ariaCoreBrowser.isIE8) && aria.utils && aria.utils.Delegate) {
                     try {
                         var activeElement = Aria.$window.document.activeElement;
-                        if (activeElement && this.isAncestor(activeElement, domElt)) {
+                        if (activeElement && ariaUtilsDom.isAncestor(activeElement, domElt)) {
                             // On IE 7-8, there is an issue after removing from the DOM a focused element.
                             // We detect it here so that next time there is a need to focus an element, we focus the
                             // body first (which is the work-around for IE 7-8)
@@ -263,38 +272,38 @@ module.exports = Aria.classDefinition({
                         // It does not happen with IE 11 in IE8 mode.
                     }
                 }
-                // PROFILING // var msr2 = this.$startMeasure("RemoveHTML");
+                // PROFILING // var msr2 = ariaUtilsDom.$startMeasure("RemoveHTML");
                 // TODO: check HTML for security (no script ...)
                 try {
                     domElt.innerHTML = ""; // this makes IE run faster (!)
-                    // PROFILING // this.$stopMeasure(msr2);
+                    // PROFILING // ariaUtilsDom.$stopMeasure(msr2);
                     domElt.innerHTML = newHTML;
                 } catch (ex) {
                     // PTR 04429212:
                     // IE does not support setting the innerHTML property of tbody, tfoot, thead or tr elements
                     // directly. We use a simple work-around:
                     // create a complete table, get the HTML element and insert it in the DOM
-                    var newDomElt = this._createTableElement(domElt.tagName, newHTML, domElt.ownerDocument);
+                    var newDomElt = ariaUtilsDom._createTableElement(domElt.tagName, newHTML, domElt.ownerDocument);
                     if (newDomElt) {
-                        this.replaceDomElement(domElt, newDomElt);
-                        this.copyAttributes(domElt, newDomElt);
+                        ariaUtilsDom.replaceDomElement(domElt, newDomElt);
+                        ariaUtilsDom.copyAttributes(domElt, newDomElt);
                         domElt = newDomElt;
                     } else {
                         // propagate the exception
                         throw ex;
                     }
                 }
-                // PROFILING // var msr3 = this.$startMeasure("contentchange");
+                // PROFILING // var msr3 = ariaUtilsDom.$startMeasure("contentchange");
                 // use the delegate manager to forward a fake event
                 if (aria.utils && aria.utils.Delegate) {
                     aria.utils.Delegate.delegate(aria.DomEvent.getFakeEvent('contentchange', domElt));
                 }
-                // PROFILING // this.$stopMeasure(msr3);
+                // PROFILING // ariaUtilsDom.$stopMeasure(msr3);
             } else {
-                this.$logError(this.DIV_NOT_FOUND, [idOrElt]);
+                ariaUtilsDom.$logError(ariaUtilsDom.DIV_NOT_FOUND, [idOrElt]);
                 return null;
             }
-            // PROFILING // this.$stopMeasure(msr1);
+            // PROFILING // ariaUtilsDom.$stopMeasure(msr1);
             return domElt;
         },
 
@@ -322,7 +331,7 @@ module.exports = Aria.classDefinition({
                 div.innerHTML = ["<", containerType, ">", html, "</", containerType, ">"].join('');
                 domElt = div.children[0];
             }
-            this.$assert(194, !domElt || (domElt.tagName.toUpperCase() == containerType)); // only to be sure
+            ariaUtilsDom.$assert(194, !domElt || (domElt.tagName.toUpperCase() == containerType)); // only to be sure
             // we got the right element
             return domElt;
         },
@@ -347,8 +356,8 @@ module.exports = Aria.classDefinition({
          */
         insertAdjacentHTML : function (domElt, where, html) {
             if (Aria.$window.document.body.insertAdjacentHTML) {
-                this.insertAdjacentHTML = function (domElt, where, html) {
-                    // PROFILING // var msr = this.$startMeasure("insertAdjacentHTML");
+                ariaUtilsDom.insertAdjacentHTML = function (domElt, where, html) {
+                    // PROFILING // var msr = ariaUtilsDom.$startMeasure("insertAdjacentHTML");
                     // IE, Chrome, Safari, Opera
                     // simply use insertAdjacentHTML
                     try {
@@ -364,16 +373,16 @@ module.exports = Aria.classDefinition({
                         } else if (where == "beforeBegin" || where == "afterEnd") {
                             containerElt = domElt.parentNode;
                         } else {
-                            this.$logError(this.INSERT_ADJACENT_INVALID_POSITION, [where]);
+                            ariaUtilsDom.$logError(ariaUtilsDom.INSERT_ADJACENT_INVALID_POSITION, [where]);
                             return;
                         }
-                        newDomElt = this._createTableElement(containerElt.tagName, html, domElt.ownerDocument);
+                        newDomElt = ariaUtilsDom._createTableElement(containerElt.tagName, html, domElt.ownerDocument);
                         if (newDomElt) {
                             var previousChild = newDomElt.lastChild;
                             // now let's move the html content to the right place
                             // first put lastChild at the right place, then, move the remaining children
                             if (previousChild) {
-                                this.insertAdjacentElement(domElt, where, previousChild);
+                                ariaUtilsDom.insertAdjacentElement(domElt, where, previousChild);
                                 var curChild = newDomElt.lastChild;
                                 while (curChild) {
                                     containerElt.insertBefore(curChild, previousChild);
@@ -386,11 +395,11 @@ module.exports = Aria.classDefinition({
                             throw ex;
                         }
                     }
-                    // PROFILING // this.$stopMeasure(msr);
+                    // PROFILING // ariaUtilsDom.$stopMeasure(msr);
                 };
             } else {
-                this.insertAdjacentHTML = function (domElt, where, html) {
-                    // PROFILING // var msr = this.$startMeasure("insertAdjacentHTML");
+                ariaUtilsDom.insertAdjacentHTML = function (domElt, where, html) {
+                    // PROFILING // var msr = ariaUtilsDom.$startMeasure("insertAdjacentHTML");
                     // Firefox
                     // Note that this solution could work as well with Chrome, Safari and Opera
                     var document = domElt.ownerDocument;
@@ -401,13 +410,13 @@ module.exports = Aria.classDefinition({
                         range.selectNodeContents(domElt);
                     }
                     var fragment = range.createContextualFragment(html);
-                    this.insertAdjacentElement(domElt, where, fragment);
+                    ariaUtilsDom.insertAdjacentElement(domElt, where, fragment);
                     range.detach();
-                    // PROFILING // this.$stopMeasure(msr);
+                    // PROFILING // ariaUtilsDom.$stopMeasure(msr);
                 };
             }
 
-            this.insertAdjacentHTML(domElt, where, html);
+            ariaUtilsDom.insertAdjacentHTML(domElt, where, html);
         },
 
         /**
@@ -420,12 +429,12 @@ module.exports = Aria.classDefinition({
          */
         insertAdjacentElement : function (domElt, where, newElement) {
             if (Aria.$window.document.body.insertAdjacentElement) {
-                this.insertAdjacentElement = function (domElt, where, newElement) {
+                ariaUtilsDom.insertAdjacentElement = function (domElt, where, newElement) {
                     domElt.insertAdjacentElement(where, newElement);
                 };
             } else {
                 // Firefox :'(
-                this.insertAdjacentElement = function (domElt, where, newElement) {
+                ariaUtilsDom.insertAdjacentElement = function (domElt, where, newElement) {
                     if (where == "beforeBegin") {
                         domElt.parentNode.insertBefore(newElement, domElt);
                     } else if (where == "afterBegin") {
@@ -435,12 +444,12 @@ module.exports = Aria.classDefinition({
                     } else if (where == "afterEnd") {
                         domElt.parentNode.insertBefore(newElement, domElt.nextSibling);
                     } else {
-                        this.$logError(this.INSERT_ADJACENT_INVALID_POSITION, [where]);
+                        ariaUtilsDom.$logError(ariaUtilsDom.INSERT_ADJACENT_INVALID_POSITION, [where]);
                     }
                 };
             }
 
-            this.insertAdjacentElement(domElt, where, newElement);
+            ariaUtilsDom.insertAdjacentElement(domElt, where, newElement);
         },
 
         /**
@@ -453,11 +462,11 @@ module.exports = Aria.classDefinition({
             // Note that copying attributes with a loop on attributes and setAttributes has strange results on IE7 (for
             // example, a TR can appear as disabled)
             if (Aria.$window.document.body.mergeAttributes) {
-                this.copyAttributes = function (src, dest) {
+                ariaUtilsDom.copyAttributes = function (src, dest) {
                     dest.mergeAttributes(src, false);
                 };
             } else {
-                this.copyAttributes = function (src, dest) {
+                ariaUtilsDom.copyAttributes = function (src, dest) {
                     // on other browsers, let's copy the attributes manually:
                     var srcAttr = src.attributes;
                     for (var i = 0, l = srcAttr.length; i < l; i++) {
@@ -467,7 +476,7 @@ module.exports = Aria.classDefinition({
                 };
             }
 
-            this.copyAttributes(src, dest);
+            ariaUtilsDom.copyAttributes(src, dest);
         },
 
         /**
@@ -580,7 +589,7 @@ module.exports = Aria.classDefinition({
          * See also http://jakub-g.github.io/quirksmode/widthtest.html
          */
         getViewportSize : function () {
-            return this._getViewportSize();
+            return ariaUtilsDom._getViewportSize();
         },
 
         /**
@@ -594,7 +603,7 @@ module.exports = Aria.classDefinition({
             var document = base && base.ownerDocument ? base.ownerDocument : Aria.$window.document;
             var scrollLeft = 0;
             var scrollTop = 0;
-            var documentScroll = this.getDocumentScrollElement(document);
+            var documentScroll = ariaUtilsDom.getDocumentScrollElement(document);
 
             if (base != null) {
                 var next = base;
@@ -639,14 +648,14 @@ module.exports = Aria.classDefinition({
             // Take the maximum between the document and the viewport srollWidth/Height
             // PTR 04677501 AT-Release1.0-36 release bug fixing: Safari has the correct scrollWidth and scrollHeight in
             // document.body
-            var doc = this.getDocumentScrollElement();
+            var doc = ariaUtilsDom.getDocumentScrollElement();
 
             var docSize = {
                 width : doc.scrollWidth,
                 height : doc.scrollHeight
             };
 
-            var vieportSize = this._getViewportSize();
+            var vieportSize = ariaUtilsDom._getViewportSize();
 
             return {
                 width : Math.max(docSize.width, vieportSize.width),
@@ -774,7 +783,7 @@ module.exports = Aria.classDefinition({
          * @return {aria.utils.DomBeans:Geometry} Geometry object
          */
         getClientGeometry : function (element) {
-            var position = this.calculatePosition(element);
+            var position = ariaUtilsDom.calculatePosition(element);
             return {
                 x : position.left + element.clientLeft,
                 y : position.top + element.clientTop,
@@ -791,25 +800,25 @@ module.exports = Aria.classDefinition({
          * @public
          */
         getOffset : function (element) {
-            var positionStyle = this.getStyle(element, "position");
+            var positionStyle = ariaUtilsDom.getStyle(element, "position");
             var isAbsolute = positionStyle === "absolute";
             var isFixed = positionStyle === "fixed";
             var position = {};
             if (isAbsolute) {
-                position.left = this.getStylePx(element, "left", null);
-                position.top = this.getStylePx(element, "top", null);
+                position.left = ariaUtilsDom.getStylePx(element, "left", null);
+                position.top = ariaUtilsDom.getStylePx(element, "top", null);
             }
             if (position.left == null || position.top == null) {
                 var offsetParent = isFixed ? Aria.$window.document.body : element.offsetParent;
-                var offsetParentPosition = this.calculatePosition(offsetParent);
-                var elementPosition = this.calculatePosition(element);
+                var offsetParentPosition = ariaUtilsDom.calculatePosition(offsetParent);
+                var elementPosition = ariaUtilsDom.calculatePosition(element);
                 if (position.left == null) {
-                    var borderLeft = this.getStylePx(offsetParent, "borderLeftWidth", 0);
+                    var borderLeft = ariaUtilsDom.getStylePx(offsetParent, "borderLeftWidth", 0);
                     position.left = elementPosition.left - offsetParentPosition.left + offsetParent.scrollLeft
                             - borderLeft;
                 }
                 if (position.top == null) {
-                    var borderTop = this.getStylePx(offsetParent, "borderTopWidth", 0);
+                    var borderTop = ariaUtilsDom.getStylePx(offsetParent, "borderTopWidth", 0);
                     position.top = elementPosition.top - offsetParentPosition.top + offsetParent.scrollTop - borderTop;
                 }
             }
@@ -832,7 +841,7 @@ module.exports = Aria.classDefinition({
             var document = element.ownerDocument;
 
             if (element === document.body) {
-                var size = this.getFullPageSize();
+                var size = ariaUtilsDom.getFullPageSize();
 
                 return {
                     x : 0,
@@ -853,7 +862,7 @@ module.exports = Aria.classDefinition({
                     height = element.offsetHeight;
                 }
 
-                var position = this.calculatePosition(element);
+                var position = ariaUtilsDom.calculatePosition(element);
                 var res = {
                     x : position.left,
                     y : position.top,
@@ -869,7 +878,7 @@ module.exports = Aria.classDefinition({
                 var documentElement = document.documentElement;
                 var body = document.body;
                 do {
-                    var parentPosition = this.getStyle(parent, "position");
+                    var parentPosition = ariaUtilsDom.getStyle(parent, "position");
                     if (parentPosition == "absolute" || parentPosition == "fixed") {
                         parent = parent.offsetParent;
                     } else {
@@ -880,9 +889,9 @@ module.exports = Aria.classDefinition({
                     }
 
                     // taking client geometry of the parent so that it does not include scrollbars
-                    var parentGeometry = this.getClientGeometry(parent);
-                    var parentOverflowX = this.getStyle(parent, "overflowX");
-                    var parentOverflowY = this.getStyle(parent, "overflowY");
+                    var parentGeometry = ariaUtilsDom.getClientGeometry(parent);
+                    var parentOverflowX = ariaUtilsDom.getStyle(parent, "overflowX");
+                    var parentOverflowY = ariaUtilsDom.getStyle(parent, "overflowY");
 
                     var delta;
                     if (parentOverflowX != "visible") {
@@ -933,7 +942,7 @@ module.exports = Aria.classDefinition({
             var browser = ariaCoreBrowser;
             var isIE8orLess = browser.isIE8 || browser.isIE7;
             if (isIE8orLess) {
-                this.getStyle = function (element, property) {
+                ariaUtilsDom.getStyle = function (element, property) {
                     if (property == 'opacity') {// IE<=8 opacity uses filter
                         var val = 100;
                         try { // will error if no DXImageTransform
@@ -962,14 +971,14 @@ module.exports = Aria.classDefinition({
                     return (value || element.style[property]);
                 };
             } else {
-                this.getStyle = function (element, property) {
+                ariaUtilsDom.getStyle = function (element, property) {
                     var window = Aria.$window;
                     var value = null;
                     if (property == "float") {
                         property = "cssFloat";
                     } else if (property == "backgroundPositionX" || property == "backgroundPositionY") {
                         // backgroundPositionX and backgroundPositionY are not standard
-                        var backgroundPosition = this.getStyle(element, "backgroundPosition");
+                        var backgroundPosition = ariaUtilsDom.getStyle(element, "backgroundPosition");
                         if (backgroundPosition) {
                             var match = /^([-.0-9a-z%]+)\s([-.0-9a-z%]+)($|,)/.exec(backgroundPosition);
                             if (match) {
@@ -986,7 +995,7 @@ module.exports = Aria.classDefinition({
                 };
             }
 
-            return this.getStyle(element, property);
+            return ariaUtilsDom.getStyle(element, property);
         },
 
         /**
@@ -996,8 +1005,8 @@ module.exports = Aria.classDefinition({
          * @return {aria.utils.DomBeans:Position} position of the element when centered in the viewport
          */
         centerInViewport : function (size, base) {
-            var viewportSize = this._getViewportSize();
-            var documentScroll = this._getDocumentScroll(base);
+            var viewportSize = ariaUtilsDom._getViewportSize();
+            var documentScroll = ariaUtilsDom._getDocumentScroll(base);
             return {
                 left : parseInt(documentScroll.scrollLeft + (viewportSize.width - size.width) / 2, 10),
                 top : parseInt(documentScroll.scrollTop + (viewportSize.height - size.height) / 2, 10)
@@ -1012,8 +1021,8 @@ module.exports = Aria.classDefinition({
          * @return {Boolean} True if the given position+size couple can fit in the current viewport
          */
         isInViewport : function (position, size, base) {
-            var viewportSize = this._getViewportSize();
-            var documentScroll = this._getDocumentScroll(base);
+            var viewportSize = ariaUtilsDom._getViewportSize();
+            var documentScroll = ariaUtilsDom._getDocumentScroll(base);
 
             if (position.top < documentScroll.scrollTop || position.left < documentScroll.scrollLeft
                     || position.top + size.height > documentScroll.scrollTop + viewportSize.height
@@ -1033,8 +1042,8 @@ module.exports = Aria.classDefinition({
         isInside : function (needle, haystack) {
             needle.width = needle.width || 0;
             needle.height = needle.height || 0;
-            if (haystack == this.VIEWPORT) {
-                return this.isInViewport({
+            if (haystack == ariaUtilsDom.VIEWPORT) {
+                return ariaUtilsDom.isInViewport({
                     left : needle.x,
                     top : needle.y
                 }, {
@@ -1061,8 +1070,8 @@ module.exports = Aria.classDefinition({
          * @return {aria.utils.DomBeans:Position}
          */
         fitInViewport : function (position, size, base) {
-            var viewportSize = this._getViewportSize();
-            var documentScroll = this._getDocumentScroll(base);
+            var viewportSize = ariaUtilsDom._getViewportSize();
+            var documentScroll = ariaUtilsDom._getDocumentScroll(base);
 
             var minTopValue = documentScroll.scrollTop;
             var maxTopValue = Math.max(0, documentScroll.scrollTop + viewportSize.height - size.height);
@@ -1087,8 +1096,8 @@ module.exports = Aria.classDefinition({
         fitInside : function (geometry, container) {
             geometry.width = geometry.width || 0;
             geometry.height = geometry.height || 0;
-            if (container == this.VIEWPORT) {
-                container = this.getViewportSize();
+            if (container == ariaUtilsDom.VIEWPORT) {
+                container = ariaUtilsDom.getViewportSize();
                 container.x = container.y = 0;
             }
             container.width = container.width || 0;
@@ -1136,7 +1145,7 @@ module.exports = Aria.classDefinition({
          * @return {Boolean} true if the HTML element is in the DOM hierarchy
          */
         isInDom : function (element) {
-            return element ? this.isAncestor(element, element.ownerDocument.body) : false;
+            return element ? ariaUtilsDom.isAncestor(element, element.ownerDocument.body) : false;
         },
 
         /**
@@ -1159,7 +1168,7 @@ module.exports = Aria.classDefinition({
             var document = element.ownerDocument;
             var origin = element, originRect = origin.getBoundingClientRect();
             var hasScroll = false;
-            var documentScroll = this.getDocumentScrollElement(document);
+            var documentScroll = ariaUtilsDom.getDocumentScrollElement(document);
 
             while (element) {
 
@@ -1261,8 +1270,8 @@ module.exports = Aria.classDefinition({
         setOpacity : function (element, opacity) {
             var browser = ariaCoreBrowser;
             var isIE8OrLess = (browser.isIE8 || browser.isIE7);
-            this.setOpacity = isIE8OrLess ? this._setOpacityLegacyIE : this._setOpacityW3C;
-            this.setOpacity(element, opacity);
+            ariaUtilsDom.setOpacity = isIE8OrLess ? ariaUtilsDom._setOpacityLegacyIE : ariaUtilsDom._setOpacityW3C;
+            ariaUtilsDom.setOpacity(element, opacity);
         },
 
         /**
@@ -1341,8 +1350,8 @@ module.exports = Aria.classDefinition({
          * @param {HTMLElement} element
          */
         refreshScrollbars : function (domElt) {
-            this.refreshScrollbars = this._checkRefreshScrollbarsNeeded() ? this._refreshScrollbarsFix : Aria.empty;
-            this.refreshScrollbars(domElt);
+            ariaUtilsDom.refreshScrollbars = ariaUtilsDom._checkRefreshScrollbarsNeeded() ? ariaUtilsDom._refreshScrollbarsFix : Aria.empty;
+            ariaUtilsDom.refreshScrollbars(domElt);
         },
 
         /**
@@ -1354,8 +1363,8 @@ module.exports = Aria.classDefinition({
          * @return {Number}
          */
         getStylePx : function (element, property, defaultValue) {
-            var value = this.getStyle(element, property);
-            if (this.pxRegExp.test(value)) {
+            var value = ariaUtilsDom.getStyle(element, property);
+            if (ariaUtilsDom.pxRegExp.test(value)) {
                 return Math.round(parseFloat(value));
             }
             return defaultValue;
