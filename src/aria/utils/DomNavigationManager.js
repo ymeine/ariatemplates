@@ -771,7 +771,7 @@ exports.DialogNavigationInterceptor = ModalNavigationInterceptor;
  *   Focus traps' elements will be inserted right before and right after the element, corresponding respectively to a navigation direction "forward" or "backward".
  * </p>
  *
- * @param {Object|Function} spec Part of the input spec for NavigationInterceptor, excluding "origin" and "focusTraps" which are set specifically by this current constructor. If no object is passed, the function "getReference" can be passed directly.
+ * @param {Object|Function} spec Part of the input spec for NavigationInterceptor, excluding "origin" and "focusTraps" which are set specifically by this current constructor. If no object is passed, the function "getReference" can be passed directly. This "getReference" function can return either a reference DOM element, or an object describing the range of elements to be skipped, this way: {first: myFirstElementOfTheRangeToBeSkipped, last: myLastElementOfTheRangeToBeSkipped}
  *
  * @return {NavigationInterceptor} an instance of NavigationInterceptor
  */
@@ -935,7 +935,7 @@ exports.ElementNavigationInterceptor = ModalNavigationHandler;
  *   Behavior is to skip navigation through the element.
  * </p>
  *
- * @param {HtmlElement|Object} reference The reference DOM element, or an object describing the range of elements to be skipped, this way: {first: myFirstElementOfTheRangeToBeSkipped, last: myLastElementOfTheRangeToBeSkipped}
+ * @param {HtmlElement|Object} reference The reference data as SkippedElementNavigationInterceptor expects to be returned from "getReference"
  *
  * @return {NavigationInterceptor} an instance of NavigationInterceptor
  */

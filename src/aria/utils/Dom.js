@@ -30,7 +30,6 @@ module.exports = Aria.classDefinition({
         ariaUtilsDom = this;
     },
     $destructor : function () {
-        this.$JsObject.$dispose.call(this);
         ariaUtilsDom = null;
     },
     $statics : {
