@@ -71,6 +71,22 @@ module.exports = Aria.classDefinition({
         },
 
         /**
+         * Tells whether a DOM node is an HTMLElement.
+         * 
+         * @param {Node} node The DOM node to check
+         * 
+         * @return {Boolean} true is the given node is an HTMLElement, false otherwise
+         */
+        isElement : function(node) {
+            var window = Aria.$window;
+            try {
+                return node instanceof window.HTMLElement;
+            } catch (exception) {
+                return node.nodeType === window.Node.ELEMENT_NODE;
+            }
+        },
+
+        /**
          * Get one of the elements in the DOM which follows the given DOM element.
          * @param {HTMLElement} domElt reference DOM element
          * @param {Number} count [optional, default: 1], number of the following DOM element (1 for the immediately
@@ -83,7 +99,7 @@ module.exports = Aria.classDefinition({
             }
             while (domElt && count > 0) {
                 domElt = domElt.nextSibling;
-                if (domElt && domElt.nodeType == 1) {
+                if (domElt && this.isElement(domElt)) {
                     count--;
                 }
             }
@@ -102,7 +118,7 @@ module.exports = Aria.classDefinition({
             }
             while (domElt && count > 0) {
                 domElt = domElt.previousSibling;
-                if (domElt && domElt.nodeType == 1) {
+                if (domElt && this.isElement(domElt)) {
                     count--;
                 }
             }
@@ -123,8 +139,7 @@ module.exports = Aria.classDefinition({
             }
             var childNodes = parentNode.childNodes, count = 0, l = childNodes.length;
             for (var i = (reverse) ? l - 1 : 0; (reverse) ? i >= 0 : i < l; (reverse) ? i-- : i++) {
-                if (childNodes[i].nodeType == 1) {
-                    // this is an element
+                if (this.isElement(childNodes[i])) {
                     if (count == index) {
                         return childNodes[i];
                     }
