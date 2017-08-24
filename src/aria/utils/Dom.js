@@ -137,6 +137,15 @@ module.exports = Aria.classDefinition({
             if (!parentNode) {
                 return null;
             }
+            
+            if (index == null) {
+                index = 0;
+            }
+
+            if (reverse == null) {
+                reverse = false;
+            }
+
             var childNodes = parentNode.childNodes, count = 0, l = childNodes.length;
             for (var i = (reverse) ? l - 1 : 0; (reverse) ? i >= 0 : i < l; (reverse) ? i-- : i++) {
                 if (this.isElement(childNodes[i])) {

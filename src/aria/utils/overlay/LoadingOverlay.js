@@ -21,6 +21,7 @@ var ariaUtilsEvent = require("../Event");
 var ariaUtilsType = require("../Type");
 var ariaUtilsFunction = require("../Function");
 var ariaUtilsAccessibility = require("../Accessibility");
+var ariaUtilsDom = require("../Dom");
 var ariaUtilsDomNavigationManager = require("../DomNavigationManager");
 
 
@@ -141,8 +142,13 @@ module.exports = Aria.classDefinition({
 
             if (waiAria) {
                 this._showElementBack = ariaUtilsDomNavigationManager.hidingManager.hide(element);
-                this._navigationInterceptor = ariaUtilsDomNavigationManager.SkippedElementNavigationHandler(element);
-                this._navigationInterceptor.ensureElements();
+                
+                var navigationInterceptor = ariaUtilsDomNavigationManager.SkippedElementNavigationHandler(this._isElementUnderBody(element) ? element : {
+                    first: ariaUtilsDom.getDomElementChild(Aria.$window.document.body),
+                    last: ariaUtilsDom.getPreviousSiblingElement(overlay)
+                });
+                navigationInterceptor.ensureElements();
+                this._navigationInterceptor = navigationInterceptor;
             }
 
             if (text) {
@@ -159,6 +165,25 @@ module.exports = Aria.classDefinition({
             }
 
             return overlay;
+        },
+
+        /**
+         * Tells whether the node is under the body element (but not the body itself).
+         * 
+         * @param {Node} node The node to check
+         * 
+         * @return {Boolean} true if under the body, false otherwise
+         *  
+         * @private
+         */
+        _isElementUnderBody : function(node) {
+            var body = Aria.$window.document.body;
+
+            do {
+                node = node.parentNode;
+            } while (node != null && node !== body);
+
+            return node === body;
         },
 
         _readText : function () {
