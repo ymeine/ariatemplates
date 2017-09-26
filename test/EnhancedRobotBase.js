@@ -56,8 +56,6 @@ var prototype = {
     ////////////////////////////////////////////////////////////////////////////
 
     _log : function () {
-        var args = Array.prototype.slice.call(arguments);
-
         // IE < 9 compatible: http://stackoverflow.com/questions/5538972/console-log-apply-not-working-in-ie9#comment8444540_5539378
         Function.prototype.apply.call(console.log, console, args);
     },
