@@ -125,11 +125,11 @@ module.exports = Aria.classDefinition({
                 add('_drag', {
                     duration: 500,
                     from: {
-                        x: left + 2, // offset to make sure to be inside the element containing the text to select
+                        x: left - 2, // offset to make sure to be inside the element containing the text to select
                         y: y
                     },
                     to: {
-                        x: right - 2, // offset to make sure to be inside the element containing the text to select
+                        x: right + 2, // offset to make sure to be inside the element containing the text to select
                         y: y
                     }
                 });
